@@ -1,7 +1,7 @@
 import { Document, Types, Schema, model } from "mongoose";
 
 export interface IComic extends Document {
-    createdAt: Date
+    createdAt: Date;
 }
 
 const comicSchema = new Schema<IComic>({

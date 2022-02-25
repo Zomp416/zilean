@@ -1,24 +1,28 @@
 import { Document, Types, Schema, model } from "mongoose";
 
 export interface IUser extends Document {
-    email: string,
-    username: string,
-    password: string,
-    verified: boolean,
-    comics: [Types.ObjectId],
-    stories: [Types.ObjectId],
-    subscriptions: [Types.ObjectId],
-    subscriberCount: number,
-    profilePicture?: Types.ObjectId,
-    comicRatings: [{
-        id: Types.ObjectId,
-        rating: number
-    }],
-    storyRatings: [{
-        id: Types.ObjectId,
-        rating: number
-    }],
-    createdAt: Date
+    email: string;
+    username: string;
+    password: string;
+    verified: boolean;
+    comics: [Types.ObjectId];
+    stories: [Types.ObjectId];
+    subscriptions: [Types.ObjectId];
+    subscriberCount: number;
+    profilePicture?: Types.ObjectId;
+    comicRatings: [
+        {
+            id: Types.ObjectId;
+            rating: number;
+        }
+    ];
+    storyRatings: [
+        {
+            id: Types.ObjectId;
+            rating: number;
+        }
+    ];
+    createdAt: Date;
 }
 
 const userSchema = new Schema<IUser>({

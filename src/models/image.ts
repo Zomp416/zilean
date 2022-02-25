@@ -1,7 +1,7 @@
 import { Document, Types, Schema, model } from "mongoose";
 
 export interface IImage extends Document {
-    createdAt: Date
+    createdAt: Date;
 }
 
 const imageSchema = new Schema<IImage>({
