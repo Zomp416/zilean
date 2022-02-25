@@ -5,23 +5,19 @@ export interface IUser extends Document {
     username: string;
     password: string;
     verified: boolean;
-    comics: [Types.ObjectId];
-    stories: [Types.ObjectId];
-    subscriptions: [Types.ObjectId];
+    comics: Types.ObjectId[];
+    stories: Types.ObjectId[];
+    subscriptions: Types.ObjectId[];
     subscriberCount: number;
     profilePicture?: Types.ObjectId;
-    comicRatings: [
-        {
-            id: Types.ObjectId;
-            rating: number;
-        }
-    ];
-    storyRatings: [
-        {
-            id: Types.ObjectId;
-            rating: number;
-        }
-    ];
+    comicRatings: {
+        id: Types.ObjectId;
+        rating: number;
+    }[];
+    storyRatings: {
+        id: Types.ObjectId;
+        rating: number;
+    }[];
     createdAt: Date;
 }
 
