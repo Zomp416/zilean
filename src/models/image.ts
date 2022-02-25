@@ -1,12 +1,15 @@
-import mongoose from "mongoose";
+import { Document, Types, Schema, model } from "mongoose";
 
-const imageSchema = new mongoose.Schema({
+export interface IImage extends Document {
+    createdAt: Date
+}
+
+const imageSchema = new Schema<IImage>({
     createdAt: {
         type: Date,
         default: Date.now,
     },
 });
 
-const Image = mongoose.model("User", imageSchema);
-
-module.exports = Image;
+const Image = model<IImage>("Image", imageSchema);
+export default Image;

@@ -1,6 +1,27 @@
-import mongoose from "mongoose";
+import { Document, Types, Schema, model } from "mongoose";
 
-const userSchema = new mongoose.Schema({
+export interface IUser extends Document {
+    email: string,
+    username: string,
+    password: string,
+    verified: boolean,
+    comics: [Types.ObjectId],
+    stories: [Types.ObjectId],
+    subscriptions: [Types.ObjectId],
+    subscriberCount: number,
+    profilePicture?: Types.ObjectId,
+    comicRatings: [{
+        id: Types.ObjectId,
+        rating: number
+    }],
+    storyRatings: [{
+        id: Types.ObjectId,
+        rating: number
+    }],
+    createdAt: Date
+}
+
+const userSchema = new Schema<IUser>({
     email: {
         type: String,
         required: true,
@@ -19,21 +40,21 @@ const userSchema = new mongoose.Schema({
         type: Boolean,
         default: false,
     },
-    comics: [{ type: mongoose.Schema.Types.ObjectId, ref: "Comic" }],
-    stories: [{ type: mongoose.Schema.Types.ObjectId, ref: "Story" }],
-    subscriptions: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    comics: [{ type: Schema.Types.ObjectId, ref: "Comic" }],
+    stories: [{ type: Schema.Types.ObjectId, ref: "Story" }],
+    subscriptions: [{ type: Schema.Types.ObjectId, ref: "User" }],
     subscriberCount: {
         type: Number,
         default: 0,
     },
     profilePicture: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: Schema.Types.ObjectId,
         ref: "Image",
     },
     comicRatings: [
         {
             id: {
-                type: mongoose.Schema.Types.ObjectId,
+                type: Schema.Types.ObjectId,
                 ref: "Comic",
             },
             rating: {
@@ -44,7 +65,7 @@ const userSchema = new mongoose.Schema({
     storyRatings: [
         {
             id: {
-                type: mongoose.Schema.Types.ObjectId,
+                type: Schema.Types.ObjectId,
                 ref: "Story",
             },
             rating: {
@@ -58,6 +79,5 @@ const userSchema = new mongoose.Schema({
     },
 });
 
-const User = mongoose.model("User", userSchema);
-
-module.exports = User;
+const User = model<IUser>("User", userSchema);
+export default User;

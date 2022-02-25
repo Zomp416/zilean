@@ -1,12 +1,15 @@
-import mongoose from "mongoose";
+import { Document, Types, Schema, model } from "mongoose";
 
-const comicSchema = new mongoose.Schema({
+export interface IComic extends Document {
+    createdAt: Date
+}
+
+const comicSchema = new Schema<IComic>({
     createdAt: {
         type: Date,
         default: Date.now,
     },
 });
 
-const Comic = mongoose.model("User", comicSchema);
-
-module.exports = { Comic };
+const Comic = model<IComic>("Comic", comicSchema);
+export default Comic;

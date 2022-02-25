@@ -1,12 +1,15 @@
-import mongoose from "mongoose";
+import { Document, Types, Schema, model } from "mongoose";
 
-const storySchema = new mongoose.Schema({
+export interface IStory extends Document {
+    createdAt: Date
+}
+
+const storySchema = new Schema<IStory>({
     createdAt: {
         type: Date,
         default: Date.now,
     },
 });
 
-const Story = mongoose.model("User", storySchema);
-
-module.exports = Story;
+const Story = model<IStory>("Story", storySchema);
+export default Story;
