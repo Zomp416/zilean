@@ -39,10 +39,20 @@ const userSchema = new Schema<IUser>({
     verified: {
         type: Boolean,
         default: false,
+        required: true,
     },
-    comics: [{ type: Schema.Types.ObjectId, ref: "Comic" }],
-    stories: [{ type: Schema.Types.ObjectId, ref: "Story" }],
-    subscriptions: [{ type: Schema.Types.ObjectId, ref: "User" }],
+    comics: {
+        type: [{ type: Schema.Types.ObjectId, ref: "Comic" }],
+        required: true,
+    },
+    stories: {
+        type: [{ type: Schema.Types.ObjectId, ref: "Story" }],
+        required: true,
+    },
+    subscriptions: {
+        type: [{ type: Schema.Types.ObjectId, ref: "User" }],
+        required: true,
+    },
     subscriberCount: {
         type: Number,
         default: 0,
@@ -51,31 +61,38 @@ const userSchema = new Schema<IUser>({
         type: Schema.Types.ObjectId,
         ref: "Image",
     },
-    comicRatings: [
-        {
-            id: {
-                type: Schema.Types.ObjectId,
-                ref: "Comic",
+    comicRatings: {
+        type: [
+            {
+                id: {
+                    type: Schema.Types.ObjectId,
+                    ref: "Comic",
+                },
+                rating: {
+                    type: Number,
+                },
             },
-            rating: {
-                type: Number,
+        ],
+        required: true,
+    },
+    storyRatings: {
+        type: [
+            {
+                id: {
+                    type: Schema.Types.ObjectId,
+                    ref: "Story",
+                },
+                rating: {
+                    type: Number,
+                },
             },
-        },
-    ],
-    storyRatings: [
-        {
-            id: {
-                type: Schema.Types.ObjectId,
-                ref: "Story",
-            },
-            rating: {
-                type: Number,
-            },
-        },
-    ],
+        ],
+        required: true,
+    },
     createdAt: {
         type: Date,
         default: Date.now,
+        required: true,
     },
 });
 

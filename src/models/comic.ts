@@ -49,6 +49,13 @@ export interface IComic extends Document {
     comicImageURL: string;
     author: Types.ObjectId;
     layers: ILayer[];
+    views: number;
+    ratingTotal: number; // sum of all ratings
+    ratingCount: number; // number of ratings
+    comments: {
+        text: string;
+        author: Types.ObjectId;
+    }[];
     createdAt: Date;
 }
 
@@ -74,9 +81,40 @@ const comicSchema = new Schema<IComic>({
     author: {
         type: Schema.Types.ObjectId,
         ref: "User",
+        required: true,
     },
     layers: {
         type: [Object],
+        required: true,
+    },
+    views: {
+        type: Number,
+        default: 0,
+        required: true,
+    },
+    ratingTotal: {
+        type: Number,
+        default: 0,
+        required: true,
+    },
+    ratingCount: {
+        type: Number,
+        default: 0,
+        required: true,
+    },
+    comments: {
+        type: [
+            {
+                text: {
+                    type: String,
+                    required: true,
+                },
+                author: {
+                    type: Schema.Types.ObjectId,
+                    ref: "User",
+                },
+            },
+        ],
         required: true,
     },
     createdAt: {
