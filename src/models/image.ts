@@ -6,32 +6,31 @@ export interface IImage extends Document {
     tags: string[];
     uploadedBy?: Types.ObjectId;
     createdAt: Date;
+    updatedAt: Date;
 }
 
-const imageSchema = new Schema<IImage>({
-    name: {
-        type: String,
-        required: true,
+const imageSchema = new Schema<IImage>(
+    {
+        name: {
+            type: String,
+            required: true,
+        },
+        imageURL: {
+            type: String,
+            required: true,
+        },
+        tags: {
+            type: [String],
+            default: [],
+            required: true,
+        },
+        uploadedBy: {
+            type: Schema.Types.ObjectId,
+            ref: "User",
+        },
     },
-    imageURL: {
-        type: String,
-        required: true,
-    },
-    tags: {
-        type: [String],
-        default: [],
-        required: true,
-    },
-    uploadedBy: {
-        type: Schema.Types.ObjectId,
-        ref: "User",
-    },
-    createdAt: {
-        type: Date,
-        default: Date.now,
-        required: true,
-    },
-});
+    { timestamps: true }
+);
 
 const Image = model<IImage>("Image", imageSchema);
 export default Image;

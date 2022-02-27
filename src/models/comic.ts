@@ -44,6 +44,7 @@ export interface ILayer {
 
 export interface IComic extends Document {
     title: string;
+    description?: string;
     tags: string[];
     published: boolean;
     comicImageURL: string;
@@ -57,71 +58,78 @@ export interface IComic extends Document {
         author: Types.ObjectId;
     }[];
     createdAt: Date;
+    updatedAt: Date;
+    publishedAt?: Date;
 }
 
-const comicSchema = new Schema<IComic>({
-    title: {
-        type: String,
-        required: true,
-    },
-    tags: {
-        type: [String],
-        default: [],
-        required: true,
-    },
-    published: {
-        type: Boolean,
-        default: false,
-        required: true,
-    },
-    comicImageURL: {
-        type: String,
-        required: true,
-    },
-    author: {
-        type: Schema.Types.ObjectId,
-        ref: "User",
-        required: true,
-    },
-    layers: {
-        type: [Object],
-        required: true,
-    },
-    views: {
-        type: Number,
-        default: 0,
-        required: true,
-    },
-    ratingTotal: {
-        type: Number,
-        default: 0,
-        required: true,
-    },
-    ratingCount: {
-        type: Number,
-        default: 0,
-        required: true,
-    },
-    comments: {
-        type: [
-            {
-                text: {
-                    type: String,
-                    required: true,
+const comicSchema = new Schema<IComic>(
+    {
+        title: {
+            type: String,
+            required: true,
+        },
+        description: {
+            type: String,
+        },
+        tags: {
+            type: [String],
+            default: [],
+            required: true,
+        },
+        published: {
+            type: Boolean,
+            default: false,
+            required: true,
+        },
+        comicImageURL: {
+            type: String,
+            required: true,
+        },
+        author: {
+            type: Schema.Types.ObjectId,
+            ref: "User",
+            required: true,
+        },
+        layers: {
+            type: [Object],
+            required: true,
+        },
+        views: {
+            type: Number,
+            default: 0,
+            required: true,
+        },
+        ratingTotal: {
+            type: Number,
+            default: 0,
+            required: true,
+        },
+        ratingCount: {
+            type: Number,
+            default: 0,
+            required: true,
+        },
+        comments: {
+            type: [
+                {
+                    text: {
+                        type: String,
+                        required: true,
+                    },
+                    author: {
+                        type: Schema.Types.ObjectId,
+                        ref: "User",
+                    },
                 },
-                author: {
-                    type: Schema.Types.ObjectId,
-                    ref: "User",
-                },
-            },
-        ],
-        required: true,
+            ],
+            required: true,
+        },
+        publishedAt: {
+            type: Date,
+        },
     },
-    createdAt: {
-        type: Date,
-        default: Date.now,
-    },
-});
+    { timestamps: true }
+);
 
 const Comic = model<IComic>("Comic", comicSchema);
 export default Comic;
