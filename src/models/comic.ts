@@ -46,7 +46,6 @@ export interface IComic extends Document {
     title: string;
     description?: string;
     tags: string[];
-    published: boolean;
     comicImageURL: string;
     author: Types.ObjectId;
     layers: ILayer[];
@@ -74,11 +73,6 @@ const comicSchema = new Schema<IComic>(
         tags: {
             type: [String],
             default: [],
-            required: true,
-        },
-        published: {
-            type: Boolean,
-            default: false,
             required: true,
         },
         comicImageURL: {
