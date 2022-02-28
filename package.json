@@ -4,7 +4,7 @@
   "description": "Backend service for Zomp",
   "main": "dist/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "mocha 'test/**/*.ts' --require ts-node/register --exit",
     "format": "prettier --config .prettierrc 'src/**/*.ts' --write",
     "start": "ts-node src/index.ts",
     "dev": "nodemon src/index.ts",
@@ -18,9 +18,12 @@
   },
   "devDependencies": {
     "@types/express": "^4.17.13",
+    "@types/mocha": "^9.1.0",
     "@types/node": "^17.0.21",
+    "mocha": "^9.2.1",
     "nodemon": "^2.0.15",
     "prettier": "^2.5.1",
+    "ts-mocha": "^9.0.2",
     "ts-node": "^10.5.0",
     "typescript": "^4.5.5"
   }
