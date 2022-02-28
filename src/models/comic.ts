@@ -46,7 +46,7 @@ export interface IComic extends Document {
     title: string;
     description?: string;
     tags: string[];
-    comicImageURL: string;
+    renderedURL: string;
     author: Types.ObjectId;
     layers: ILayer[];
     views: number;
@@ -74,7 +74,7 @@ const comicSchema = new Schema<IComic>(
             type: [String],
             default: [],
         },
-        comicImageURL: {
+        renderedURL: {
             type: String,
             required: true,
         },
