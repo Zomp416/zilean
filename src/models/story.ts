@@ -16,9 +16,10 @@ export interface ITextProperties {
 }
 
 export interface IStory extends Document {
-    createdAt: Date;
-    title: string, 
-    description: string,
+    title: string;
+    description?: string;
+    tags: string[];
+    story: string;
     author: Types.ObjectId;
     views: number;
     ratingTotal: number;
@@ -27,72 +28,69 @@ export interface IStory extends Document {
         text: string;
         author: Types.ObjectId;
     }[];
-    publishedAt?: Date; //? = Optional
-    story: string;
-    tag: string;
+    updatedAt: Date;
+    createdAt: Date;
+    publishedAt?: Date;
 }
 
-const storySchema = new Schema<IStory>({
-    createdAt: {
-        type: Date,
-        default: Date.now,
-    },
-    title: {
-        type: String,
-        required: true,
-    },
-    description: {
-        type: String,
-    },
-    author: {
-        type: Schema.Types.ObjectId,
-        ref: "User",
-        required: true,
-    },
-    views: {
-        type: Number,
-        default: 0,
-        required: true,
-    },
-    ratingTotal:{ 
-        type: Number,
-        default: 0,
-        required: true,
-    },
-    ratingCount: {
-        type: Number,
-        default: 0,
-        required: true,
-    },
-    coments: {
-        type: [
-            {
-                text: {
-                    type: String,
-                    required: true,
+const storySchema = new Schema<IStory>(
+    {
+        title: {
+            type: String,
+            required: true,
+        },
+        description: {
+            type: String,
+        },
+        tags: {
+            type: [String],
+            default: [],
+        },
+        story: {
+            type: String,
+            required: true,
+        },
+        author: {
+            type: Schema.Types.ObjectId,
+            ref: "User",
+            required: true,
+        },
+        views: {
+            type: Number,
+            default: 0,
+        },
+        ratingTotal: {
+            type: Number,
+            default: 0,
+        },
+        ratingCount: {
+            type: Number,
+            default: 0,
+        },
+        comments: {
+            type: [
+                {
+                    text: {
+                        type: String,
+                        required: true,
+                    },
+                    author: {
+                        type: Schema.Types.ObjectId,
+                        ref: "User",
+                    },
                 },
-                author: {
-                    type: Schema.Types.ObjectId,
-                    ref: "User",
-                },
-            },
-        ],
-        required: true,
+            ],
+            required: true,
+        },
+        publishedAt: {
+            type: Date,
+        },
+        updatedAt: {
+            type: Date,
+        },
     },
-    publishedAt:{
-        type: Date,
-    },
-    story: {
-        type: String,
-        required: true,
-    },
-    tag: {
-        type: [String],
-        default: [],
-    }
-});
+    { timestamps: true }
+);
 
 const Story = model<IStory>("Story", storySchema);
-//const myStory : IStory = new Story();
-// myStory.create
 export default Story;
