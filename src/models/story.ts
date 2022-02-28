@@ -90,9 +90,6 @@ const storySchema = new Schema<IStory>(
         publishedAt: {
             type: Date,
         },
-        updatedAt: {
-            type: Date,
-        },
     },
     { timestamps: true }
 );
