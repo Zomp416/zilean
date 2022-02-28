@@ -1,5 +1,20 @@
 import { Document, Types, Schema, model } from "mongoose";
 
+export interface IImageProperties {
+    image: Types.ObjectId;
+}
+
+export interface ITextProperties {
+    text: string;
+    color: string;
+    fontSize: string;
+    fontWeight: string;
+    fontStyle: string;
+    textDecoration: string;
+    justifyContent: string;
+    alignItems: string;
+}
+
 export interface IStory extends Document {
     uuid: string;
     createdAt: Date;
