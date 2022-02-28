@@ -16,7 +16,6 @@ export interface ITextProperties {
 }
 
 export interface IStory extends Document {
-    uuid: string;
     createdAt: Date;
     title: string, 
     description: string,
@@ -28,15 +27,12 @@ export interface IStory extends Document {
         text: string;
         author: Types.ObjectId;
     }[];
-    publishedAt?: Date;
+    publishedAt?: Date; //? = Optional
     story: string;
+    tag: string;
 }
 
 const storySchema = new Schema<IStory>({
-    uuid:{
-        type: String,
-        required: true,
-    },
     createdAt: {
         type: Date,
         default: Date.now,
@@ -90,7 +86,13 @@ const storySchema = new Schema<IStory>({
         type: String,
         required: true,
     },
+    tag: {
+        type: [String],
+        default: [],
+    }
 });
 
 const Story = model<IStory>("Story", storySchema);
+//const myStory : IStory = new Story();
+// myStory.create
 export default Story;
