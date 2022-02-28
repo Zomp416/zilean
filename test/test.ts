@@ -1,12 +1,21 @@
 import assert from "assert";
-import Comic, { IComic } from "../src/models/comic";
 import { connect, Types } from "mongoose";
+import { MongoMemoryServer } from "mongodb-memory-server";
+import Comic, { IComic } from "../src/models/comic";
 
 // basic comic document creation with mongoose
 describe("comic document creation", function () {
-    // connect to mocha-test database
+    // start and connect to ephemeral mongo server
+    let mongod: MongoMemoryServer;
     this.beforeAll(async () => {
-        await connect("mongodb://localhost:27017/mocha-test");
+        mongod = await MongoMemoryServer.create();
+        const uri = mongod.getUri();
+        await connect(uri);
+    });
+
+    // stop mongo server
+    this.afterAll(async () => {
+        await mongod.stop();
     });
 
     // reset database between test cases
