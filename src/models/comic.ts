@@ -73,7 +73,6 @@ const comicSchema = new Schema<IComic>(
         tags: {
             type: [String],
             default: [],
-            required: true,
         },
         comicImageURL: {
             type: String,
@@ -91,17 +90,14 @@ const comicSchema = new Schema<IComic>(
         views: {
             type: Number,
             default: 0,
-            required: true,
         },
         ratingTotal: {
             type: Number,
             default: 0,
-            required: true,
         },
         ratingCount: {
             type: Number,
             default: 0,
-            required: true,
         },
         comments: {
             type: [
