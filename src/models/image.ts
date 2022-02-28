@@ -4,6 +4,7 @@ export interface IImage extends Document {
     name: string;
     imageURL: string;
     tags: string[];
+    searchable: boolean;
     uploadedBy?: Types.ObjectId;
     createdAt: Date;
     updatedAt: Date;
@@ -22,6 +23,10 @@ const imageSchema = new Schema<IImage>(
         tags: {
             type: [String],
             default: [],
+            required: true,
+        },
+        searchable: {
+            type: Boolean,
             required: true,
         },
         uploadedBy: {
