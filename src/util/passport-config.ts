@@ -49,4 +49,4 @@ export const isAuthenticated = (
     res.redirect("/login");
 };
 
-module.exports = passport;
+export default passport;
