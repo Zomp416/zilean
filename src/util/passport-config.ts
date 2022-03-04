@@ -17,36 +17,29 @@ passport.deserializeUser((id, done) => {
 
 // Local Strategy
 passport.use(
-    new LocalStrategy(
-        { usernameField: "email" },
-        async (email, password, done) => {
-            // Find user with given username
-            const user = await User.findOne({ email: email });
-            if (!user) {
-                return done(undefined, false, { message: "User not found." });
-            }
-            const result = await bcrypt.compare(password, user.password);
-            if (result) {
-                return done(undefined, user);
-            } else {
-                return done(undefined, false, {
-                    message: "Invalid username or password.",
-                });
-            }
+    new LocalStrategy({ usernameField: "email" }, async (email, password, done) => {
+        // Find user with given email
+        const user = await User.findOne({ email: email });
+        if (!user) {
+            return done(undefined, false, { message: "User not found." });
         }
-    )
+        const result = await bcrypt.compare(password, user.password);
+        if (result) {
+            return done(undefined, user);
+        } else {
+            return done(undefined, false, {
+                message: "Invalid username or password.",
+            });
+        }
+    })
 );
 
-export const isAuthenticated = (
-    req: Request,
-    res: Response,
-    next: NextFunction
-) => {
+export const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
     if (req.isAuthenticated()) {
         return next();
     }
     // TODO figure out best way to handle
-    res.redirect("/login");
+    res.json({ msg: "NOT LOGGED IN" });
 };
 
 export default passport;
