@@ -19,7 +19,7 @@ async function main() {
         session({
             resave: true,
             saveUninitialized: true,
-            secret: "adsfadsfadsfadsf",
+            secret: process.env.SESSION_SECRET!,
             store: new MongoStore({
                 mongoUrl: mongo_uri,
                 ttl: 14 * 24 * 60 * 60, // 14 Days
