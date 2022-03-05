@@ -168,7 +168,7 @@ describe("basic document operations", function () {
             });
         });
         // required searchable
-        it("should fail without title", async () => {
+        it("should fail without searchable", async () => {
             await assert.rejects(async () => {
                 let image: IImage = new Image({
                     name: "myimage",
@@ -202,7 +202,7 @@ describe("basic document operations", function () {
             });
         });
         // required author
-        it("should fail without title", async () => {
+        it("should fail without author", async () => {
             await assert.rejects(async () => {
                 let story: IStory = new Story({
                     title: "Example Title",
@@ -212,7 +212,7 @@ describe("basic document operations", function () {
             });
         });
         // required story
-        it("should fail without title", async () => {
+        it("should fail without story", async () => {
             await assert.rejects(async () => {
                 let story: IStory = new Story({
                     title: "Example Title",
