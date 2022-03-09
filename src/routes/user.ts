@@ -69,8 +69,8 @@ router.post("/register", async (req, res, next) => {
     return next();
 });
 
-// TEST ROUTE TO CHECK IF LOGGED IN
-router.get("/test-check", isAuthenticated, (req, res, next) => {
+// ROUTE TO CHECK IF LOGGED IN
+router.get("/get-user", isAuthenticated, (req, res, next) => {
     const user = req.user as IUser;
     res.json({ user });
     return next();

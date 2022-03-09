@@ -39,7 +39,7 @@ export const isAuthenticated = (req: Request, res: Response, next: NextFunction)
         return next();
     }
     // TODO figure out best way to handle
-    res.json({ msg: "NOT LOGGED IN" });
+    res.json({ error: "NOT LOGGED IN" });
 };
 
 export default passport;

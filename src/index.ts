@@ -1,6 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import session from "express-session";
+import cors from "cors";
 import mongoose from "mongoose";
 import MongoStore from "connect-mongo";
 import passport from "./util/passport-config";
@@ -13,6 +14,11 @@ async function main() {
     await mongoose.connect(mongo_uri);
     const app = express();
 
+    // TODO add other origins
+    const allowedOrigins = ["http://localhost:3000"];
+    allowedOrigins.forEach(origin => {
+        app.use(cors({ origin: origin, credentials: true }));
+    })
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
     app.use(
