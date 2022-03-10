@@ -1,7 +1,6 @@
 import express from "express";
 import bcrypt from "bcrypt";
 import passport, { isAuthenticated } from "../util/passport-config";
-import { IVerifyOptions } from "passport-local";
 import User, { IUser } from "../models/user";
 
 const router = express.Router();
@@ -11,14 +10,14 @@ router.post("/login", (req, res, next) => {
     // Pass request information to passport
     passport.authenticate("local", function (err, user, info) {
         if (err) {
-            return res.status(400).json({ errors: err });
+            return res.status(401).json({ errors: err });
         }
         if (!user) {
-            return res.status(400).json({ errors: "No user found" });
+            return res.status(401).json({ errors: "No user found" });
         }
-        req.logIn(user, function (err) {
+        req.login(user, function (err) {
             if (err) {
-                return res.status(400).json({ errors: err });
+                return res.status(401).json({ errors: err });
             }
             return res.status(200).json({ success: `logged in ${user.id}` });
         });
@@ -36,7 +35,7 @@ router.post("/logout", (req, res, next) => {
 router.post("/register", async (req, res, next) => {
     const { email, username, password } = req.body;
     if (!email || !username || !password) {
-        res.json({ msg: "Missing arguments in request" });
+        res.status(400).json({ msg: "Missing arguments in request" });
         return next();
     }
 
@@ -52,7 +51,7 @@ router.post("/register", async (req, res, next) => {
     });
 
     if (existingUser) {
-        res.json({ msg: "Account with that email address and/or username already exists." });
+        res.status(400).json({ msg: "Account with that email address and/or username already exists." });
         return next();
     }
 
@@ -65,14 +64,22 @@ router.post("/register", async (req, res, next) => {
     });
 
     await user.save();
-    res.json({ msg: "Registered Successfully" });
+    
+    // Automatically Login User
+    req.login(user, (err) => {
+        if (err) {
+            res.status(200).json({ msg: "Registered Successfully, Unable to Login." });
+        } else {
+            res.status(200).json({ msg: "Registered Successfully!" });
+        }   
+    });
     return next();
 });
 
 // ROUTE TO CHECK IF LOGGED IN
 router.get("/get-user", isAuthenticated, (req, res, next) => {
     const user = req.user as IUser;
-    res.json({ user });
+    res.status(200).json({ user });
     return next();
 });
 
