@@ -7,6 +7,7 @@ import MongoStore from "connect-mongo";
 import passport from "./util/passport-config";
 import userRouter from "./routes/user";
 import comicRouter from "./routes/comic";
+import imageRouter from "./routes/image";
 
 async function main() {
     const mongo_uri = process.env.MONGO_URI;
@@ -42,6 +43,7 @@ async function main() {
 
     app.use("/", userRouter);
     app.use("/comic", comicRouter);
+    app.use("/image", imageRouter);
 
     app.get("/", (req, res) => {
         res.send("Hello world!");
