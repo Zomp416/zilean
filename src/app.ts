@@ -7,7 +7,7 @@ import userRouter from "./routes/user";
 import comicRouter from "./routes/comic";
 import imageRouter from "./routes/image";
 
-const createApp = (mongo_uri: string, secret: string) => {
+const createApp = (mongo_uri: string, session_secret: string) => {
     const app = express();
 
     // TODO add other origins
@@ -21,7 +21,7 @@ const createApp = (mongo_uri: string, secret: string) => {
         session({
             resave: true,
             saveUninitialized: true,
-            secret,
+            secret: session_secret,
             store: new MongoStore({
                 mongoUrl: mongo_uri,
                 ttl: 14 * 24 * 60 * 60, // 14 Days
