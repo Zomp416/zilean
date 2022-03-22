@@ -11,7 +11,7 @@ async function main() {
 
     await mongoose.connect(mongo_uri);
 
-    const app = createApp(mongo_uri, secret ?? "");
+    const app = createApp(mongo_uri, secret);
 
     app.listen(process.env.PORT, () => {
         console.log(`🚀 Zilean backend service now listening on port ${process.env.PORT}`);
