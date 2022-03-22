@@ -5,9 +5,9 @@ import Image, { IImage } from "../models/image";
 import User, { IUser } from "../models/user";
 import multer from "multer";
 import { v4 } from "uuid";
-import { default as isSvg } from 'is-svg';
-import fileType from 'file-type';
- 
+import { default as isSvg } from "is-svg";
+import fileType from "file-type";
+
 const router = express.Router();
 const upload = multer();
 
@@ -26,7 +26,7 @@ router.get("/:id", async (req, res, next) => {
 });
 
 // UPLOAD IMAGE - AUTH
-router.post("/", isAuthenticated, upload.single('image'), async (req, res, next) => {
+router.post("/", isAuthenticated, upload.single("image"), async (req, res, next) => {
     const user = req.user as IUser;
     if (!user.verified) {
         res.status(401).json({ error: "Must be verified to upload an image." });
@@ -60,7 +60,7 @@ router.post("/", isAuthenticated, upload.single('image'), async (req, res, next)
         res.status(400).json({ error: "Invalid request arguments." });
         return next();
     }
-    
+
     const searchable = directory === "assets";
 
     const filePath = `${directory}/${v4()}.${fileExt}`;

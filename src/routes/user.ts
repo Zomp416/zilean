@@ -1,6 +1,8 @@
 import express from "express";
 import bcrypt from "bcrypt";
 import passport, { isAuthenticated } from "../util/passport-config";
+import { sendForgotPasswordEmail, sendVerifyEmail } from "../util/email-config";
+import { verifyToken } from "../util/token-config";
 import User, { IUser } from "../models/user";
 
 const router = express.Router();
@@ -69,7 +71,9 @@ router.post("/register", async (req, res, next) => {
     });
 
     if (existingUser) {
-        res.status(400).json({ msg: "Account with that email address and/or username already exists." });
+        res.status(400).json({
+            msg: "Account with that email address and/or username already exists.",
+        });
         return next();
     }
 
@@ -82,14 +86,15 @@ router.post("/register", async (req, res, next) => {
     });
 
     await user.save();
-    
+    await sendVerifyEmail(user);
+
     // Automatically Login User
-    req.login(user, (err) => {
+    req.login(user, err => {
         if (err) {
             res.status(200).json({ msg: "Registered Successfully, Unable to Login." });
         } else {
             res.status(200).json({ msg: "Registered Successfully!" });
-        }   
+        }
     });
     return next();
 });
@@ -115,5 +120,102 @@ router.put("/", isAuthenticated, async (req, res, next) => {
     return next();
 });
 
+// FORGOT PASSWORD
+router.post("/forgot-password", async (req, res, next) => {
+    const { email } = req.body;
+    if (!email) {
+        res.status(400).json({ error: "Missing email" });
+        return next();
+    }
+
+    const user = await User.findOne({ email: email });
+    if (!user) {
+        res.status(400).json({ error: "No user with specified email" });
+        return next();
+    }
+
+    const result = await sendForgotPasswordEmail(user);
+
+    res.status(200).json(result);
+    return next();
+});
+
+// RESET PASSWORD
+router.post("/reset-password", async (req, res, next) => {
+    const { id, token, password } = req.body;
+
+    if (!id || !token || !password) {
+        res.status(400).json({ error: "Must provide all required arguments to reset password" });
+        return next();
+    }
+
+    const user = await User.findOne({ _id: id });
+    if (!user) {
+        res.status(400).json({ error: "User not found" });
+        return next();
+    }
+
+    const payload = verifyToken(user, token);
+
+    if (!payload) {
+        res.status(400).json({ error: "Token is invalid or expired" });
+        return next();
+    }
+
+    user.password = await bcrypt.hash(password, 10);
+    await user.save();
+
+    res.status(200).json({ msg: "OK" });
+    return next();
+});
+
+// SEND VERIFICATION EMAIL
+router.post("/send-verify", async (req, res, next) => {
+    const { email } = req.body;
+    if (!email) {
+        res.status(400).json({ error: "Missing email" });
+        return next();
+    }
+
+    const user = await User.findOne({ email: email });
+    if (!user) {
+        res.status(400).json({ error: "No user with specified email" });
+        return next();
+    }
+
+    const result = await sendVerifyEmail(user);
+
+    res.status(200).json(result);
+    return next();
+});
+
+// VERIFY EMAIL
+router.post("/verify", async (req, res, next) => {
+    const { id, token } = req.body;
+
+    if (!id || !token) {
+        res.status(400).json({ error: "Must provide all required arguments to reset password" });
+        return next();
+    }
+
+    const user = await User.findOne({ _id: id });
+    if (!user) {
+        res.status(400).json({ error: "User not found" });
+        return next();
+    }
+
+    const payload = verifyToken(user, token);
+
+    if (!payload) {
+        res.status(400).json({ error: "Token is invalid or expired" });
+        return next();
+    }
+
+    user.verified = true;
+    await user.save();
+
+    res.status(200).json({ msg: "OK" });
+    return next();
+});
 
 export default router;

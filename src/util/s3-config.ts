@@ -5,7 +5,7 @@ const s3 = new S3Client({
         accessKeyId: process.env.AWS_ID || "",
         secretAccessKey: process.env.AWS_SECRET || "",
     },
-    region: "us-east-1"
+    region: "us-east-1",
 });
 
 export const uploadObject = async (path: string, mimeType: string, data: Buffer) => {
