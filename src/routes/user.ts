@@ -5,6 +5,24 @@ import User, { IUser } from "../models/user";
 
 const router = express.Router();
 
+// ROUTE TO CHECK IF LOGGED IN
+router.get("/", isAuthenticated, (req, res, next) => {
+    const user = req.user as IUser;
+    res.status(200).json({ user });
+    return next();
+});
+
+// GET USER
+router.get("/:id", async (req, res, next) => {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+        res.status(400).json({ error: "No user found" });
+        return next();
+    }
+    res.status(200).json(user);
+    return next();
+});
+
 // LOGIN
 router.post("/login", (req, res, next) => {
     // Pass request information to passport
@@ -76,11 +94,26 @@ router.post("/register", async (req, res, next) => {
     return next();
 });
 
-// ROUTE TO CHECK IF LOGGED IN
-router.get("/get-user", isAuthenticated, (req, res, next) => {
-    const user = req.user as IUser;
-    res.status(200).json({ user });
+// UPDATE USER - AUTH
+router.put("/", isAuthenticated, async (req, res, next) => {
+    const oldUser = req.user as IUser;
+    const newUser = req.body.user as IUser;
+
+    if (!newUser) {
+        res.status(400).json({ error: "Missing arguments" });
+        return next();
+    }
+
+    if (newUser._id !== oldUser._id) {
+        res.status(401).json({ error: "User ID's do not match." });
+        return next();
+    }
+
+    const user = await oldUser.update(newUser);
+
+    res.status(200).json(user);
     return next();
 });
+
 
 export default router;

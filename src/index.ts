@@ -41,7 +41,7 @@ async function main() {
         next();
     });
 
-    app.use("/", userRouter);
+    app.use("/account", userRouter);
     app.use("/comic", comicRouter);
     app.use("/image", imageRouter);
 
