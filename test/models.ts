@@ -1,29 +1,32 @@
 import assert from "assert";
-import { connect, Types } from "mongoose";
+import { Types } from "mongoose";
 import { MongoMemoryServer } from "mongodb-memory-server";
+import { connect, disconnect } from "mongoose";
+
 import Comic, { IComic } from "../src/models/comic";
 import User, { IUser } from "../src/models/user";
 import Image, { IImage } from "../src/models/image";
 import Story, { IStory } from "../src/models/story";
 
 describe("basic document operations", function () {
-    // start and connect to ephemeral mongo server
-    let mongod: MongoMemoryServer;
+    var mongod: MongoMemoryServer;
+
     this.beforeAll(async () => {
         mongod = await MongoMemoryServer.create();
         const uri = mongod.getUri();
         await connect(uri);
     });
 
-    // stop mongo server
-    this.afterAll(async () => {
-        await mongod.stop();
+    this.beforeEach(async () => {
+        await User.deleteMany({});
+        await Comic.deleteMany({});
+        await Story.deleteMany({});
+        await Image.deleteMany({});
     });
 
-    // reset database between test cases
-    this.beforeEach(async () => {
-        await Comic.deleteMany({});
-        await User.deleteMany({});
+    this.afterAll(async () => {
+        await mongod.stop();
+        disconnect();
     });
 
     // comic tests
