@@ -7,25 +7,6 @@ import Image, { IImage } from "../src/models/image";
 import Story, { IStory } from "../src/models/story";
 
 describe("basic document operations", function () {
-    // start and connect to ephemeral mongo server
-    let mongod: MongoMemoryServer;
-    this.beforeAll(async () => {
-        mongod = await MongoMemoryServer.create();
-        const uri = mongod.getUri();
-        await connect(uri);
-    });
-
-    // stop mongo server
-    this.afterAll(async () => {
-        await mongod.stop();
-    });
-
-    // reset database between test cases
-    this.beforeEach(async () => {
-        await Comic.deleteMany({});
-        await User.deleteMany({});
-    });
-
     // comic tests
     describe("comic document creation", function () {
         // basic instantiation

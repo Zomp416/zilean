@@ -8,7 +8,7 @@
     "start": "ts-node src/index.ts",
     "dev": "nodemon src/index.ts",
     "prod": "tsc && node dist/index.js",
-    "test": "mocha 'test/**/*.ts' --require ts-node/register --exit",
+    "test": "mocha 'test/**/*.ts' --require ts-node/register -r './test/init.ts' --exit",
     "coverage": "nyc --all --reporter=lcov npm run test"
   },
   "author": "",
