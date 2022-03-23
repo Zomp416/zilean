@@ -1,12 +1,34 @@
 import assert from "assert";
-import { connect, Types } from "mongoose";
+import { Types } from "mongoose";
 import { MongoMemoryServer } from "mongodb-memory-server";
+import { connect, disconnect } from "mongoose";
+
 import Comic, { IComic } from "../src/models/comic";
 import User, { IUser } from "../src/models/user";
 import Image, { IImage } from "../src/models/image";
 import Story, { IStory } from "../src/models/story";
 
 describe("basic document operations", function () {
+    var mongod: MongoMemoryServer;
+
+    this.beforeAll(async () => {
+        mongod = await MongoMemoryServer.create();
+        const uri = mongod.getUri();
+        await connect(uri);
+    });
+
+    this.beforeEach(async () => {
+        await User.deleteMany({});
+        await Comic.deleteMany({});
+        await Story.deleteMany({});
+        await Image.deleteMany({});
+    });
+
+    this.afterAll(async () => {
+        await mongod.stop();
+        disconnect();
+    });
+
     // comic tests
     describe("comic document creation", function () {
         // basic instantiation
