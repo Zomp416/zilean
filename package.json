@@ -2,13 +2,13 @@
   "name": "zilean",
   "version": "1.0.0",
   "description": "Backend service for Zomp",
-  "main": "dist/index.js",
+  "main": "dist/src/index.js",
   "scripts": {
     "format": "prettier --config .prettierrc 'src/**/*.ts' 'test/**/*.ts' --write",
-    "start": "node dist/index.ts",
+    "start": "node dist/src/index.js",
     "postinstall": "tsc",
     "dev": "nodemon src/index.ts",
-    "prod": "tsc && node dist/index.js",
+    "prod": "tsc && node dist/src/index.js",
     "test": "mocha 'test/**/*.ts' --require ts-node/register --exit",
     "coverage": "nyc --all --reporter=lcov npm run test"
   },
