@@ -5,6 +5,82 @@ import User, { IUser } from "../models/user";
 
 const router = express.Router();
 
+// SEARCH COMICS
+router.get("/search", async (req, res, next) => {
+    const comicQuery = Comic.find();
+
+    // ONLY SHOW PUBLISHED COMICS
+    const queryFilters : any[] =  [
+        {
+            "publishedAt": {
+                "$exists": true,
+            }
+        }
+    ];
+
+    // SUBSCRIPTIONS FILTER
+    if (req.query.subscriptions === "true") {
+        if (!req.isAuthenticated()) {
+            res.status(400).json({ error: "Must be logged in to show subscriptions" });
+            return next();
+        }
+        const user = req.user as IUser;
+        queryFilters.push({
+            "author": {
+                "$in": user.subscriptions,
+            }
+        });
+
+    }
+
+    // USER FILTER
+    if (req.query.author) {
+        const userFilter = req.query.author as string;
+        queryFilters.push({
+            "author": userFilter
+        });
+    }
+
+    // TIME FILTER
+    if (req.query.time && req.query.time !== "all") {
+        const timeFilter = req.query.time as string;
+        let timeBoundary = new Date();
+        if (timeFilter === "year") {
+            timeBoundary.setFullYear(timeBoundary.getFullYear() - 1);
+        } else if (timeFilter === "month") {
+            timeBoundary.setMonth(timeBoundary.getMonth() - 1);
+        } else if (timeFilter === "week") {
+            timeBoundary = new Date(timeBoundary.getMilliseconds() - 7 * 60 * 60 * 24 * 1000);
+        } else if (timeFilter === "day") {
+            timeBoundary = new Date(timeBoundary.getMilliseconds() - 60 * 60 * 24 * 1000);
+        }
+        queryFilters.push({
+            "publishedAt": {
+                "$gte": timeBoundary,
+            }
+        });
+    }
+
+    // ADD FILTERS TO QUERY
+    if (queryFilters.length !== 0) {
+        comicQuery.and(queryFilters);
+    }
+    
+
+    // SORT RESULTS (ex: views, rating)
+    if (req.query.sort) {
+        comicQuery.sort(req.query.sort);
+    }
+
+    // TODO PAGINATION AND LIMITS
+
+    // EXECUTE QUERY
+    const comics = await comicQuery.exec();
+
+    res.status(200).json(comics);
+    return;
+});
+
 // GET COMIC
 router.get("/:id", async (req, res, next) => {
     const comic = await Comic.findById(req.params.id);
@@ -30,6 +106,10 @@ router.post("/", isAuthenticated, async (req, res, next) => {
     });
 
     await newComic.save();
+    
+    user.comics.push(newComic._id);
+    await user.save();
+
     res.status(200).json(newComic);
     return next();
 });

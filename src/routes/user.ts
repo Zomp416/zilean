@@ -27,6 +27,7 @@ router.get("/:id", async (req, res, next) => {
 
 // LOGIN
 router.post("/login", (req, res, next) => {
+    // TODO DECIDE ON LOWERCASE/UPPERCASE HANDLING
     // Pass request information to passport
     passport.authenticate("local", function (err, user, info) {
         if (err) {
@@ -58,6 +59,8 @@ router.post("/register", async (req, res, next) => {
         res.status(400).json({ msg: "Missing arguments in request" });
         return next();
     }
+
+    // TODO DECIDE ON LOWERCASE/UPPERCASE HANDLING
 
     const existingUser = await User.findOne({
         $or: [
