@@ -14,6 +14,73 @@ router.get("/", isAuthenticated, (req, res, next) => {
     return next();
 });
 
+// SEARCH USERS
+router.get("/search", async (req, res, next) => {
+    const userQuery = User.find();
+
+    // NO PRELIMINARY FILTERS
+    const queryFilters: any[] = [];
+
+    // SUBSCRIPTIONS FILTER
+    if (req.query.subscriptions === "true") {
+        if (!req.isAuthenticated()) {
+            res.status(400).json({ error: "Must be logged in to show subscriptions" });
+            return next();
+        }
+        const user = req.user as IUser;
+        queryFilters.push({
+            uploadedBy: {
+                $in: user.subscriptions,
+            },
+        });
+    }
+
+    // NAME FILTER
+    if (req.query.value) {
+        const nameFilter = req.query.value as string;
+        queryFilters.push({
+            username: {
+                $regex: new RegExp(nameFilter, "i"),
+            },
+        });
+    }
+
+    // TAGS FILTER - CURRENTLY NOT SUPPORTED FOR USERS...
+    // if (req.query.tags) {
+    //     if (Array.isArray(req.query.tags)) {
+    //         const tags = req.query.tags as string[];
+    //         queryFilters.push({
+    //             tags: {
+    //                 $all: tags,
+    //             },
+    //         });
+    //     } else {
+    //         const tag = req.query.tags;
+    //         queryFilters.push({
+    //             tags: tag,
+    //         });
+    //     }
+    // }
+
+    // ADD FILTERS TO QUERY
+    if (queryFilters.length !== 0) {
+        userQuery.and(queryFilters);
+    }
+
+    // SORT RESULTS (ex: subscriberCount)
+    if (req.query.sort) {
+        userQuery.sort(req.query.sort);
+    }
+
+    // TODO PAGINATION AND LIMITS
+
+    // EXECUTE QUERY
+    const users = await userQuery.exec();
+
+    res.status(200).json(users);
+    return;
+});
+
 // GET USER
 router.get("/:id", async (req, res, next) => {
     const user = await User.findById(req.params.id);
