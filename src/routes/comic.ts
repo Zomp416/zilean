@@ -10,12 +10,12 @@ router.get("/search", async (req, res, next) => {
     const comicQuery = Comic.find();
 
     // ONLY SHOW PUBLISHED COMICS
-    const queryFilters : any[] =  [
+    const queryFilters: any[] = [
         {
-            "publishedAt": {
-                "$exists": true,
-            }
-        }
+            publishedAt: {
+                $exists: true,
+            },
+        },
     ];
 
     // SUBSCRIPTIONS FILTER
@@ -26,18 +26,27 @@ router.get("/search", async (req, res, next) => {
         }
         const user = req.user as IUser;
         queryFilters.push({
-            "author": {
-                "$in": user.subscriptions,
-            }
+            author: {
+                $in: user.subscriptions,
+            },
         });
-
     }
 
     // USER FILTER
     if (req.query.author) {
         const userFilter = req.query.author as string;
         queryFilters.push({
-            "author": userFilter
+            author: userFilter,
+        });
+    }
+
+    // TITLE FILTER
+    if (req.query.value) {
+        const titleFilter = req.query.value as string;
+        queryFilters.push({
+            title: {
+                $regex: new RegExp(titleFilter, "i"),
+            },
         });
     }
 
@@ -55,9 +64,9 @@ router.get("/search", async (req, res, next) => {
             timeBoundary = new Date(timeBoundary.getMilliseconds() - 60 * 60 * 24 * 1000);
         }
         queryFilters.push({
-            "publishedAt": {
-                "$gte": timeBoundary,
-            }
+            publishedAt: {
+                $gte: timeBoundary,
+            },
         });
     }
 
@@ -66,14 +75,14 @@ router.get("/search", async (req, res, next) => {
         if (Array.isArray(req.query.tags)) {
             const tags = req.query.tags as string[];
             queryFilters.push({
-                "tags": {
-                    "$all": tags,
-                }
+                tags: {
+                    $all: tags,
+                },
             });
         } else {
             const tag = req.query.tags;
             queryFilters.push({
-                "tags": tag,
+                tags: tag,
             });
         }
     }
@@ -82,7 +91,6 @@ router.get("/search", async (req, res, next) => {
     if (queryFilters.length !== 0) {
         comicQuery.and(queryFilters);
     }
-    
 
     // SORT RESULTS (ex: views, rating)
     if (req.query.sort) {
@@ -123,7 +131,7 @@ router.post("/", isAuthenticated, async (req, res, next) => {
     });
 
     await newComic.save();
-    
+
     user.comics.push(newComic._id);
     await user.save();
 
