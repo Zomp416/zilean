@@ -61,6 +61,23 @@ router.get("/search", async (req, res, next) => {
         });
     }
 
+    // TAGS FILTER
+    if (req.query.tags) {
+        if (Array.isArray(req.query.tags)) {
+            const tags = req.query.tags as string[];
+            queryFilters.push({
+                "tags": {
+                    "$all": tags,
+                }
+            });
+        } else {
+            const tag = req.query.tags;
+            queryFilters.push({
+                "tags": tag,
+            });
+        }
+    }
+
     // ADD FILTERS TO QUERY
     if (queryFilters.length !== 0) {
         comicQuery.and(queryFilters);
