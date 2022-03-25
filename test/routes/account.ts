@@ -79,6 +79,48 @@ describe("account routes", function () {
         it("should fail if unauthenticated", async () => {
             const res = await request(app).get("/account").expect(401);
             assert.equal(res.body.msg, "NOT LOGGED IN");
+            assert.equal(res.body.data, undefined);
+        });
+    });
+
+    describe("/logout route", function () {
+        it("should log out a logged in user", async () => {
+            const user = await dummyUser();
+            const session = request(app);
+            await session
+                .post("/account/login")
+                .send(user.login)
+                .set("Content-Type", "application/json");
+            const res1 = await session.post("/account/logout").expect(200);
+            const res2 = await request(app).get("/account").expect(401);
+            assert.equal(res1.body.msg, "Logged Out!");
+            assert.equal(res2.body.msg, "NOT LOGGED IN");
+        });
+        it("should not error on logout even when not logged in", async () => {
+            await request(app).post("/account/logout").expect(200);
+        });
+    });
+
+    describe("/register route", function () {
+        it("should successfully register an unverified user", async () => {
+            const user = await dummyUser(false);
+            const session = request(app);
+            await session
+                .post("/account/register")
+                .send(user.register)
+                .set("Content-Type", "application/json")
+                .expect(200);
+            const res = await session.get("/account").expect(200);
+            assert.equal(res.body.data.email, user.email);
+            assert.equal(res.body.data.username, user.username);
+            assert.equal(res.body.data.verified, false);
+            assert.equal(
+                await User.countDocuments({
+                    email: user.email,
+                    username: user.username,
+                }),
+                1
+            );
         });
     });
 });
