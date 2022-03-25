@@ -44,7 +44,7 @@ describe("account routes", function () {
                 .send(user.login)
                 .set("Content-Type", "application/json")
                 .expect(200);
-            assert.equal(res.body.success, `logged in ${user.db!._id}`);
+            assert.equal(res.body.msg, `logged in ${user.db!._id}`);
         });
         it("should fail with incorrect password", async () => {
             const user = await dummyUser();
@@ -54,7 +54,7 @@ describe("account routes", function () {
                 .send(user.login)
                 .set("Content-Type", "application/json")
                 .expect(401);
-            assert.equal(res.body.error, "Invalid username or password.");
+            assert.equal(res.body.msg, "Invalid username or password.");
         });
         it("should fail if user does not exist", async () => {
             const user = await dummyUser(false);
@@ -63,7 +63,7 @@ describe("account routes", function () {
                 .send(user.login)
                 .set("Content-Type", "application/json")
                 .expect(401);
-            assert.equal(res.body.error, "User not found.");
+            assert.equal(res.body.msg, "User not found.");
         });
     });
 
@@ -73,12 +73,12 @@ describe("account routes", function () {
             const session = request(app);
             await session.post("/account/login").send(user.login);
             const res = await session.get("/account").expect(200);
-            assert.equal(res.body.user.email, user.login.email);
-            assert.equal(res.body.user.username, user.db!.username);
+            assert.equal(res.body.data.email, user.login.email);
+            assert.equal(res.body.data.username, user.db!.username);
         });
         it("should fail if unauthenticated", async () => {
             const res = await request(app).get("/account").expect(401);
-            assert.equal(res.body.error, "NOT LOGGED IN");
+            assert.equal(res.body.msg, "NOT LOGGED IN");
         });
     });
 });
