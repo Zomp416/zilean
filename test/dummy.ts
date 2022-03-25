@@ -12,6 +12,6 @@ export const dummyUser = async (save = true) => {
         ? await new User({ username, email, password: hash }).save()
         : null;
     const login = { email, password };
-    const signup = { email, password, username };
-    return { login, db, signup };
+    const register = { email, password, username };
+    return { login, db, register };
 };
