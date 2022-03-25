@@ -149,5 +149,28 @@ describe("account routes", function () {
             assert.equal(res2.body.msg, "Missing arguments in request");
             assert.equal(res3.body.msg, "Missing arguments in request");
         });
+        it("should fail if username or email are already taken", async () => {
+            const user = await dummyUser();
+            user.register.email = user.register.email.toLowerCase();
+            const res1 = await request(app)
+                .post("/account/register")
+                .send(user.register)
+                .set("Content-Type", "application/json")
+                .expect(400);
+            user.register.email = user.register.email.toLowerCase();
+            const res2 = await request(app)
+                .post("/account/register")
+                .send(user.register)
+                .set("Content-Type", "application/json")
+                .expect(400);
+            assert.equal(
+                res1.body.msg,
+                "Account with that email address and/or username already exists."
+            );
+            assert.equal(
+                res2.body.msg,
+                "Account with that email address and/or username already exists."
+            );
+        });
     });
 });
