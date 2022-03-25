@@ -122,5 +122,32 @@ describe("account routes", function () {
                 1
             );
         });
+        it("should fail if message body is missing information", async () => {
+            const session = request(app);
+            const user1 = await dummyUser(false);
+            user1.register.email = "";
+            const res1 = await session
+                .post("/account/register")
+                .send(user1.register)
+                .set("Content-Type", "application/json")
+                .expect(400);
+            const user2 = await dummyUser(false);
+            user2.register.username = "";
+            const res2 = await session
+                .post("/account/register")
+                .send(user2.register)
+                .set("Content-Type", "application/json")
+                .expect(400);
+            const user3 = await dummyUser(false);
+            user3.register.password = "";
+            const res3 = await session
+                .post("/account/register")
+                .send(user3.register)
+                .set("Content-Type", "application/json")
+                .expect(400);
+            assert.equal(res1.body.msg, "Missing arguments in request");
+            assert.equal(res2.body.msg, "Missing arguments in request");
+            assert.equal(res3.body.msg, "Missing arguments in request");
+        });
     });
 });
