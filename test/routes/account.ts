@@ -36,7 +36,7 @@ describe("account routes", function () {
         app.close();
     });
 
-    describe("/login route", function () {
+    describe("POST /account/login", function () {
         it("should succeed with correct user/password", async () => {
             const user = await dummyUser();
             const res = await request(app)
@@ -67,14 +67,14 @@ describe("account routes", function () {
         });
     });
 
-    describe("/ route", function () {
+    describe("GET /account", function () {
         it("should retrieve information of logged in user", async () => {
             const user = await dummyUser();
             const session = request(app);
             await session.post("/account/login").send(user.login);
             const res = await session.get("/account").expect(200);
-            assert.equal(res.body.data.email, user.login.email);
-            assert.equal(res.body.data.username, user.db!.username);
+            assert.equal(res.body.data.email, user.email);
+            assert.equal(res.body.data.username, user.username);
         });
         it("should fail if unauthenticated", async () => {
             const res = await request(app).get("/account").expect(401);
@@ -83,7 +83,7 @@ describe("account routes", function () {
         });
     });
 
-    describe("/logout route", function () {
+    describe("POST /account/logout", function () {
         it("should log out a logged in user", async () => {
             const user = await dummyUser();
             const session = request(app);
@@ -101,7 +101,7 @@ describe("account routes", function () {
         });
     });
 
-    describe("/register route", function () {
+    describe("POST /account/register", function () {
         it("should successfully register an unverified user", async () => {
             const user = await dummyUser(false);
             const session = request(app);
