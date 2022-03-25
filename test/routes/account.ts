@@ -56,5 +56,29 @@ describe("account routes", function () {
                 .expect(401);
             assert.equal(res.body.error, "Invalid username or password.");
         });
+        it("should fail if user does not exist", async () => {
+            const user = await dummyUser(false);
+            const res = await request(app)
+                .post("/account/login")
+                .send(user.login)
+                .set("Content-Type", "application/json")
+                .expect(401);
+            assert.equal(res.body.error, "User not found.");
+        });
+    });
+
+    describe("/ route", function () {
+        it("should retrieve information of logged in user", async () => {
+            const user = await dummyUser();
+            const session = request(app);
+            await session.post("/account/login").send(user.login);
+            const res = await session.get("/account").expect(200);
+            assert.equal(res.body.user.email, user.login.email);
+            assert.equal(res.body.user.username, user.db!.username);
+        });
+        it("should fail if unauthenticated", async () => {
+            const res = await request(app).get("/account").expect(401);
+            assert.equal(res.body.error, "NOT LOGGED IN");
+        });
     });
 });
