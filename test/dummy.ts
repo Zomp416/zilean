@@ -13,5 +13,5 @@ export const dummyUser = async (save = true) => {
         : null;
     const login = { email, password };
     const register = { email, password, username };
-    return { login, db, register };
+    return { login, db, register, username, email, password, hash };
 };
