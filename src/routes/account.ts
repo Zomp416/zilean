@@ -98,16 +98,16 @@ router.post("/login", (req, res, next) => {
     // Pass request information to passport
     passport.authenticate("local", function (err, user, info) {
         if (err) {
-            return res.status(401).json({ msg: err });
+            return res.status(401).json({ error: err });
         }
         if (!user) {
-            return res.status(401).json({ msg: info.message });
+            return res.status(401).json({ error: info.message });
         }
         req.login(user, function (err) {
             if (err) {
                 return res.status(401).json({ error: err });
             }
-            return res.status(200).json({ msg: `logged in ${user.id}` });
+            return res.status(200).json({ message: `logged in ${user.id}` });
         });
     })(req, res, next);
 });
@@ -115,7 +115,7 @@ router.post("/login", (req, res, next) => {
 // LOGOUT
 router.post("/logout", (req, res, next) => {
     req.logout();
-    res.json({ msg: "Logged Out!" });
+    res.json({ message: "Logged Out!" });
     return next();
 });
 
@@ -123,7 +123,7 @@ router.post("/logout", (req, res, next) => {
 router.post("/register", async (req, res, next) => {
     const { email, username, password } = req.body;
     if (!email || !username || !password) {
-        res.status(400).json({ msg: "Missing arguments in request" });
+        res.status(400).json({ error: "Missing arguments in request" });
         return next();
     }
 
@@ -142,7 +142,7 @@ router.post("/register", async (req, res, next) => {
 
     if (existingUser) {
         res.status(400).json({
-            msg: "Account with that email address and/or username already exists.",
+            error: "Account with that email address and/or username already exists.",
         });
         return next();
     }
@@ -161,9 +161,9 @@ router.post("/register", async (req, res, next) => {
     // Automatically Login User
     req.login(user, err => {
         if (err) {
-            res.status(200).json({ msg: "Registered Successfully, Unable to Login." });
+            res.status(200).json({ message: "Registered Successfully, Unable to Login." });
         } else {
-            res.status(200).json({ msg: "Registered Successfully!" });
+            res.status(200).json({ message: "Registered Successfully!" });
         }
     });
     return next();

@@ -44,7 +44,7 @@ describe("account routes", function () {
                 .send(user.login)
                 .set("Content-Type", "application/json")
                 .expect(200);
-            assert.equal(res.body.msg, `logged in ${user.db!._id}`);
+            assert.equal(res.body.message, `logged in ${user.db!._id}`);
         });
         it("should fail with incorrect password", async () => {
             const user = await dummyUser();
@@ -54,7 +54,7 @@ describe("account routes", function () {
                 .send(user.login)
                 .set("Content-Type", "application/json")
                 .expect(401);
-            assert.equal(res.body.msg, "Invalid username or password.");
+            assert.equal(res.body.error, "Invalid username or password.");
         });
         it("should fail if user does not exist", async () => {
             const user = await dummyUser(false);
@@ -63,7 +63,7 @@ describe("account routes", function () {
                 .send(user.login)
                 .set("Content-Type", "application/json")
                 .expect(401);
-            assert.equal(res.body.msg, "User not found.");
+            assert.equal(res.body.error, "User not found.");
         });
     });
 
@@ -78,7 +78,7 @@ describe("account routes", function () {
         });
         it("should fail if unauthenticated", async () => {
             const res = await request(app).get("/account").expect(401);
-            assert.equal(res.body.msg, "NOT LOGGED IN");
+            assert.equal(res.body.error, "NOT LOGGED IN");
             assert.equal(res.body.data, undefined);
         });
     });
@@ -93,8 +93,8 @@ describe("account routes", function () {
                 .set("Content-Type", "application/json");
             const res1 = await session.post("/account/logout").expect(200);
             const res2 = await request(app).get("/account").expect(401);
-            assert.equal(res1.body.msg, "Logged Out!");
-            assert.equal(res2.body.msg, "NOT LOGGED IN");
+            assert.equal(res1.body.message, "Logged Out!");
+            assert.equal(res2.body.error, "NOT LOGGED IN");
         });
         it("should not error on logout even when not logged in", async () => {
             await request(app).post("/account/logout").expect(200);
@@ -145,9 +145,9 @@ describe("account routes", function () {
                 .send(user3.register)
                 .set("Content-Type", "application/json")
                 .expect(400);
-            assert.equal(res1.body.msg, "Missing arguments in request");
-            assert.equal(res2.body.msg, "Missing arguments in request");
-            assert.equal(res3.body.msg, "Missing arguments in request");
+            assert.equal(res1.body.error, "Missing arguments in request");
+            assert.equal(res2.body.error, "Missing arguments in request");
+            assert.equal(res3.body.error, "Missing arguments in request");
         });
         it("should fail if username or email are already taken", async () => {
             const user = await dummyUser();
@@ -164,11 +164,11 @@ describe("account routes", function () {
                 .set("Content-Type", "application/json")
                 .expect(400);
             assert.equal(
-                res1.body.msg,
+                res1.body.error,
                 "Account with that email address and/or username already exists."
             );
             assert.equal(
-                res2.body.msg,
+                res2.body.error,
                 "Account with that email address and/or username already exists."
             );
         });
