@@ -8,8 +8,10 @@ export const dummyUser = async (save = true) => {
     const email = crypto.randomBytes(20).toString("hex");
     const password = crypto.randomBytes(20).toString("hex");
     const hash = await bcrypt.hash(password, 10);
-    let db: IUser | null = null;
-    if (save) db = await new User({ username, email, password: hash }).save();
+    const db: IUser | null = save
+        ? await new User({ username, email, password: hash }).save()
+        : null;
     const login = { email, password };
-    return { login, db };
+    const signup = { email, password, username };
+    return { login, db, signup };
 };
