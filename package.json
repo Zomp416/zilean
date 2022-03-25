@@ -4,7 +4,7 @@
   "description": "Backend service for Zomp",
   "main": "dist/src/index.js",
   "scripts": {
-    "format": "prettier --config .prettierrc 'src/**/*.ts' 'test/**/*.ts' --write",
+    "format": "prettier --config .prettierrc 'src/**/*.ts' 'test/**/*.test.ts' --write",
     "start": "node dist/src/index.js",
     "postinstall": "tsc",
     "dev": "nodemon src/index.ts",
