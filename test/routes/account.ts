@@ -54,7 +54,7 @@ describe("account routes", function () {
                 .send(user.login)
                 .set("Content-Type", "application/json")
                 .expect(401);
-            assert.equal(res.body.errors, "invalid username or password");
+            assert.equal(res.body.error, "Invalid username or password.");
         });
     });
 });

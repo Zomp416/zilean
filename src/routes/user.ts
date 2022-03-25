@@ -98,14 +98,14 @@ router.post("/login", (req, res, next) => {
     // Pass request information to passport
     passport.authenticate("local", function (err, user, info) {
         if (err) {
-            return res.status(401).json({ errors: err });
+            return res.status(401).json({ error: err });
         }
         if (!user) {
-            return res.status(401).json({ errors: "No user found" });
+            return res.status(401).json({ error: info.message });
         }
         req.login(user, function (err) {
             if (err) {
-                return res.status(401).json({ errors: err });
+                return res.status(401).json({ error: err });
             }
             return res.status(200).json({ success: `logged in ${user.id}` });
         });
