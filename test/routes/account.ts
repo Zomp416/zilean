@@ -105,15 +105,16 @@ describe("account routes", function () {
         it("should successfully register an unverified user", async () => {
             const user = await dummyUser(false);
             const session = request(app);
-            await session
+            const res1 = await session
                 .post("/account/register")
                 .send(user.register)
                 .set("Content-Type", "application/json")
                 .expect(200);
-            const res = await session.get("/account").expect(200);
-            assert.equal(res.body.data.email, user.email);
-            assert.equal(res.body.data.username, user.username);
-            assert.equal(res.body.data.verified, false);
+            assert.equal(res1.body.message, "Registered Successfully!");
+            const res2 = await session.get("/account").expect(200);
+            assert.equal(res2.body.data.email, user.email);
+            assert.equal(res2.body.data.username, user.username);
+            assert.equal(res2.body.data.verified, false);
             assert.equal(
                 await User.countDocuments({
                     email: user.email,
