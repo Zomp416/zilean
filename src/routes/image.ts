@@ -109,7 +109,7 @@ router.get("/search", async (req, res, next) => {
     // EXECUTE QUERY
     const images = await imageQuery.exec();
 
-    res.status(200).json(images);
+    res.status(200).json({ data: images });
     return;
 });
 
@@ -120,7 +120,7 @@ router.get("/:id", async (req, res, next) => {
         res.status(400).json({ error: "No image found" });
         return next();
     }
-    res.status(200).json(image);
+    res.status(200).json({ data: image });
     return next();
 });
 
@@ -175,7 +175,7 @@ router.post("/", isAuthenticated, upload.single("image"), async (req, res, next)
     await newImage.save();
     await uploadObject(filePath, mimeType, file.buffer);
 
-    res.status(200).json(newImage);
+    res.status(200).json({ data: newImage });
     return next();
 });
 
@@ -204,7 +204,7 @@ router.put("/:id", isAuthenticated, async (req, res, next) => {
     const updatedImage = req.body.image as IImage;
     await image.update(updatedImage);
 
-    res.status(200).json(image);
+    res.status(200).json({ data: image });
     return next();
 });
 
@@ -232,7 +232,7 @@ router.delete("/:id", isAuthenticated, async (req, res, next) => {
     await deleteObject(image.imageURL);
 
     // TODO handle error case
-    res.status(200).json({ msg: "Successfully deleted image." });
+    res.status(200).json({ message: "Successfully deleted image." });
     return next();
 });
 

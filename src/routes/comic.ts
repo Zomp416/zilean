@@ -102,7 +102,7 @@ router.get("/search", async (req, res, next) => {
     // EXECUTE QUERY
     const comics = await comicQuery.exec();
 
-    res.status(200).json(comics);
+    res.status(200).json({ data: comics });
     return;
 });
 
@@ -113,7 +113,7 @@ router.get("/:id", async (req, res, next) => {
         res.status(400).json({ error: "No comic found" });
         return next();
     }
-    res.status(200).json(comic);
+    res.status(200).json({ data: comic });
     return next();
 });
 
@@ -135,7 +135,7 @@ router.post("/", isAuthenticated, async (req, res, next) => {
     user.comics.push(newComic._id);
     await user.save();
 
-    res.status(200).json(newComic);
+    res.status(200).json({ data: newComic });
     return next();
 });
 
@@ -163,7 +163,7 @@ router.put("/:id", isAuthenticated, async (req, res, next) => {
     const updatedComic = req.body.comic as IComic;
     await comic.update(updatedComic);
 
-    res.status(200).json(comic);
+    res.status(200).json({ data: comic });
     return next();
 });
 
@@ -188,7 +188,7 @@ router.delete("/:id", isAuthenticated, async (req, res, next) => {
     }
 
     await comic.delete();
-    res.status(200).json({ msg: "Successfully deleted comic." });
+    res.status(200).json({ message: "Successfully deleted comic." });
     return next();
 });
 

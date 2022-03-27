@@ -117,13 +117,13 @@ export const sendForgotPasswordEmail = async (user: IUser) => {
     transporter.sendMail(mailOptions, (error, info) => {
         if (error) {
             console.log(error);
-            return { error: "ERROR" };
+            return "ERROR";
         } else {
             console.log(`Email sent: ${info.response}`);
         }
     });
 
-    return { msg: "OK" };
+    return "OK";
 };
 
 export const sendVerifyEmail = async (user: IUser) => {
@@ -141,11 +141,11 @@ export const sendVerifyEmail = async (user: IUser) => {
     transporter.sendMail(mailOptions, (error, info) => {
         if (error) {
             console.log(error);
-            return { error: "ERROR" };
+            return "ERROR";
         } else {
             console.log(`Email sent: ${info.response}`);
         }
     });
 
-    return { msg: "OK" };
+    return "OK";
 };
