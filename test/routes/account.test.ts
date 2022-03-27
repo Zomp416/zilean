@@ -28,6 +28,7 @@ describe("account routes", function () {
     });
 
     this.beforeEach(async () => {
+        sendVerifyEmailStub.reset();
         await User.deleteMany({});
         await Comic.deleteMany({});
         await Story.deleteMany({});
@@ -154,6 +155,7 @@ describe("account routes", function () {
             assert.equal(res1.body.error, "Missing arguments in request");
             assert.equal(res2.body.error, "Missing arguments in request");
             assert.equal(res3.body.error, "Missing arguments in request");
+            assert.equal(sendVerifyEmailStub.callCount, 0);
         });
         it("should fail if username or email are already taken", async () => {
             const user = await dummyUser();
@@ -177,6 +179,7 @@ describe("account routes", function () {
                 res2.body.error,
                 "Account with that email address and/or username already exists."
             );
+            assert.equal(sendVerifyEmailStub.callCount, 0);
         });
     });
     describe("POST /account/subscribe", function () {
