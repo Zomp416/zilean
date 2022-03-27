@@ -77,7 +77,7 @@ router.get("/search", async (req, res, next) => {
     // EXECUTE QUERY
     const users = await userQuery.exec();
 
-    res.status(200).json(users);
+    res.status(200).json({ data: users });
     return;
 });
 
@@ -88,13 +88,12 @@ router.get("/:id", async (req, res, next) => {
         res.status(400).json({ error: "No user found" });
         return next();
     }
-    res.status(200).json(user);
+    res.status(200).json({ data: user });
     return next();
 });
 
 // LOGIN
 router.post("/login", (req, res, next) => {
-    // TODO DECIDE ON LOWERCASE/UPPERCASE HANDLING
     // Pass request information to passport
     passport.authenticate("local", function (err, user, info) {
         if (err) {
@@ -121,13 +120,13 @@ router.post("/logout", (req, res, next) => {
 
 // REGISTER
 router.post("/register", async (req, res, next) => {
-    const { email, username, password } = req.body;
+    let { email, username, password } = req.body;
     if (!email || !username || !password) {
         res.status(400).json({ error: "Missing arguments in request" });
         return next();
     }
 
-    // TODO DECIDE ON LOWERCASE/UPPERCASE HANDLING
+    email = (email as string).toLowerCase();
 
     const existingUser = await User.findOne({
         $or: [
@@ -186,7 +185,7 @@ router.put("/", isAuthenticated, async (req, res, next) => {
 
     const user = await oldUser.update(newUser);
 
-    res.status(200).json(user);
+    res.status(200).json({ data: user });
     return next();
 });
 
@@ -206,7 +205,7 @@ router.post("/forgot-password", async (req, res, next) => {
 
     const result = await sendForgotPasswordEmail(user);
 
-    res.status(200).json(result);
+    res.status(200).json({ message: result });
     return next();
 });
 
@@ -235,7 +234,7 @@ router.post("/reset-password", async (req, res, next) => {
     user.password = await bcrypt.hash(password, 10);
     await user.save();
 
-    res.status(200).json({ msg: "OK" });
+    res.status(200).json({ message: "OK" });
     return next();
 });
 
@@ -255,7 +254,7 @@ router.post("/send-verify", async (req, res, next) => {
 
     const result = await sendVerifyEmail(user);
 
-    res.status(200).json(result);
+    res.status(200).json({ message: result });
     return next();
 });
 
@@ -284,7 +283,7 @@ router.post("/verify", async (req, res, next) => {
     user.verified = true;
     await user.save();
 
-    res.status(200).json({ msg: "OK" });
+    res.status(200).json({ message: "OK" });
     return next();
 });
 
