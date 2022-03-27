@@ -189,6 +189,40 @@ router.put("/", isAuthenticated, async (req, res, next) => {
     return next();
 });
 
+// SUBSCRIBE TO ANOTHER USER
+router.post("/subscribe", isAuthenticated, async (req, res, next) => {
+    const user = req.user as IUser;
+    const { subscription, ..._ } = req.body;
+
+    if (user.subscriptions.includes(subscription))
+        return res.status(400).json({ error: "already subscribed" });
+
+    await User.findByIdAndUpdate(user._id, {
+        $push: { subscriptions: subscription },
+    });
+    await User.findByIdAndUpdate(subscription, { $inc: { subscriberCount: 1 } });
+
+    res.status(200).json({ message: "subscribed successfully" });
+    return next();
+});
+
+// UNSUBSCRIBE FROM ANOTHER USER
+router.post("/unsubscribe", isAuthenticated, async (req, res, next) => {
+    const user = req.user as IUser;
+    const { subscription, ..._ } = req.body;
+
+    if (!user.subscriptions.includes(subscription))
+        return res.status(400).json({ error: "not subscribed" });
+
+    await User.findByIdAndUpdate(user._id, {
+        $pull: { subscriptions: subscription },
+    });
+    await User.findByIdAndUpdate(subscription, { $inc: { subscriberCount: -1 } });
+
+    res.status(200).json({ message: "unsubscribed successfully" });
+    return next();
+});
+
 // FORGOT PASSWORD
 router.post("/forgot-password", async (req, res, next) => {
     const { email } = req.body;

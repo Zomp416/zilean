@@ -174,4 +174,88 @@ describe("account routes", function () {
             );
         });
     });
+    describe("POST /account/subscribe", function () {
+        it("should successfully make a subscription", async () => {
+            const user1 = await dummyUser();
+            const user2 = await dummyUser();
+            const session = request(app);
+            await session
+                .post("/account/login")
+                .send(user1.login)
+                .set("Content-Type", "application/json");
+            const res = await session
+                .post("/account/subscribe")
+                .send({ subscription: user2.db!._id })
+                .set("Content-Type", "application/json")
+                .expect(200);
+            assert.equal(res.body.message, "subscribed successfully");
+            assert.equal((await User.findById(user2.db!._id).exec())!.subscriberCount, 1);
+            assert.deepEqual((await User.findById(user1.db!._id).exec())!.subscriptions, [
+                user2.db!._id,
+            ]);
+        });
+        it("should fail to subscribe to the same user twice", async () => {
+            const user1 = await dummyUser();
+            const user2 = await dummyUser();
+            const session = request(app);
+            await session
+                .post("/account/login")
+                .send(user1.login)
+                .set("Content-Type", "application/json");
+            await session
+                .post("/account/subscribe")
+                .send({ subscription: user2.db!._id })
+                .set("Content-Type", "application/json");
+            const res = await session
+                .post("/account/subscribe")
+                .send({ subscription: user2.db!._id })
+                .set("Content-Type", "application/json")
+                .expect(400);
+            assert.equal(res.body.error, "already subscribed");
+            assert.equal((await User.findById(user2.db!._id).exec())!.subscriberCount, 1);
+            assert.deepEqual((await User.findById(user1.db!._id).exec())!.subscriptions, [
+                user2.db!._id,
+            ]);
+        });
+    });
+    describe("POST /account/unsubscribe", function () {
+        it("should successfully remove a subscription", async () => {
+            const user1 = await dummyUser();
+            const user2 = await dummyUser();
+            const session = request(app);
+            await session
+                .post("/account/login")
+                .send(user1.login)
+                .set("Content-Type", "application/json");
+            await session
+                .post("/account/subscribe")
+                .send({ subscription: user2.db!._id })
+                .set("Content-Type", "application/json");
+            const res = await session
+                .post("/account/unsubscribe")
+                .send({ subscription: user2.db!._id })
+                .set("Content-Type", "application/json")
+                .expect(200);
+            assert.equal(res.body.message, "unsubscribed successfully");
+            assert.equal((await User.findById(user2.db!._id).exec())!.subscriberCount, 0);
+            assert.deepEqual((await User.findById(user1.db!._id).exec())!.subscriptions, []);
+        });
+        it("should fail to remove a subscription that doesn't exist", async () => {
+            const user1 = await dummyUser();
+            const user2 = await dummyUser();
+            const session = request(app);
+            await session
+                .post("/account/login")
+                .send(user1.login)
+                .set("Content-Type", "application/json");
+            const res = await session
+                .post("/account/unsubscribe")
+                .send({ subscription: user2.db!._id })
+                .set("Content-Type", "application/json")
+                .expect(400);
+            assert.equal(res.body.error, "not subscribed");
+            assert.equal((await User.findById(user2.db!._id).exec())!.subscriberCount, 0);
+            assert.deepEqual((await User.findById(user1.db!._id).exec())!.subscriptions, []);
+        });
+    });
 });
