@@ -1,4 +1,5 @@
 import assert from "assert";
+import sinon from "sinon";
 import { MongoMemoryServer } from "mongodb-memory-server";
 import { connect, disconnect } from "mongoose";
 import { Server } from "http";
@@ -11,6 +12,9 @@ import User from "../../src/models/user";
 import Image from "../../src/models/image";
 import Story from "../../src/models/story";
 import createApp from "../../src/app";
+import * as email from "../../src/util/email-config";
+
+const sendVerifyEmailStub = sinon.stub(email, "sendVerifyEmail");
 
 describe("account routes", function () {
     var mongod: MongoMemoryServer;
@@ -122,6 +126,7 @@ describe("account routes", function () {
                 }),
                 1
             );
+            assert.equal(sendVerifyEmailStub.callCount, 1);
         });
         it("should fail if message body is missing information", async () => {
             const session = request(app);
