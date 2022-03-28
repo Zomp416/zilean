@@ -7,10 +7,7 @@ import { Express } from "express";
 const request = require("supertest-session");
 
 import { dummyUser } from "../dummy";
-import Comic from "../../src/models/comic";
 import User from "../../src/models/user";
-import Image from "../../src/models/image";
-import Story from "../../src/models/story";
 import createApp from "../../src/app";
 import * as email from "../../src/util/email-config";
 import { generateToken } from "../../src/util/token-config";
@@ -22,23 +19,16 @@ describe("account routes", function () {
     var mongod: MongoMemoryServer;
     var app: Express;
 
-    this.beforeAll(async () => {
+    this.beforeEach(async () => {
         mongod = await MongoMemoryServer.create();
         const uri = mongod.getUri();
         await connect(uri);
-        app = createApp(uri, "secret");
-    });
-
-    this.beforeEach(async () => {
+        app = createApp(uri, "_");
         sendVerifyEmailStub.reset();
         sendForgotPasswordEmailStub.reset();
-        await User.deleteMany({});
-        await Comic.deleteMany({});
-        await Story.deleteMany({});
-        await Image.deleteMany({});
     });
 
-    this.afterAll(async () => {
+    this.afterEach(async () => {
         await mongod.stop();
         await disconnect();
     });
