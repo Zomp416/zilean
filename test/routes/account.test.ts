@@ -362,4 +362,32 @@ describe("account routes", function () {
             assert.equal(res.body.error, "Token is invalid or expired");
         });
     });
+    describe("POST /account/send-verify", function () {
+        it("should trigger a verification email", async () => {
+            const user = await dummyUser();
+            await request(app)
+                .post("/account/send-verify")
+                .send({ email: user.email })
+                .set("Content-Type", "application/json")
+                .expect(200);
+            assert.equal(sendVerifyEmailStub.callCount, 1);
+        });
+        it("should error if no email is provided", async () => {
+            const res = await request(app)
+                .post("/account/send-verify")
+                .set("Content-Type", "application/json")
+                .expect(400);
+            assert.equal(res.body.error, "Missing email");
+            assert.equal(sendForgotPasswordEmailStub.callCount, 0);
+        });
+        it("should error if no user exists with given email", async () => {
+            const res = await request(app)
+                .post("/account/send-verify")
+                .send({ email: "_" })
+                .set("Content-Type", "application/json")
+                .expect(400);
+            assert.equal(res.body.error, "No user with specified email");
+            assert.equal(sendForgotPasswordEmailStub.callCount, 0);
+        });
+    });
 });
