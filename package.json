@@ -32,7 +32,6 @@
     "nodemailer": "^6.7.3",
     "passport": "^0.5.2",
     "passport-local": "^1.0.0",
-    "sinon": "^13.0.1",
     "uuid": "^8.3.2"
   },
   "devDependencies": {
@@ -55,6 +54,7 @@
     "nodemon": "^2.0.15",
     "nyc": "^15.1.0",
     "prettier": "^2.5.1",
+    "sinon": "^13.0.1",
     "supertest": "^6.2.2",
     "supertest-session": "^4.1.0",
     "ts-mocha": "^9.0.2",
