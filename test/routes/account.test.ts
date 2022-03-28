@@ -91,6 +91,21 @@ describe("account routes", function () {
         });
     });
 
+    describe("GET /account/:id", function () {
+        it("should retrieve information of a given user", async () => {
+            const user = await dummyUser();
+            const res = await request(app).get(`/account/${user.db!._id}`).expect(200);
+            assert.equal(user.email, res.body.data.email);
+            assert.equal(user.username, res.body.data.username);
+        });
+        it("should error if user cannot be found", async () => {
+            const user = await dummyUser();
+            await User.deleteMany({});
+            const res = await request(app).get(`/account/${user.db!._id}`).expect(400);
+            assert.equal(res.body.error, "No user found");
+        });
+    });
+
     describe("POST /account/logout", function () {
         it("should log out a logged in user", async () => {
             const user = await dummyUser();
