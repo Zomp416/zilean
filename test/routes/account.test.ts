@@ -1,5 +1,6 @@
 import assert from "assert";
 import sinon from "sinon";
+import crypto from "crypto";
 import { MongoMemoryServer } from "mongodb-memory-server";
 import { connect, disconnect } from "mongoose";
 import { Server } from "http";
@@ -15,6 +16,7 @@ import createApp from "../../src/app";
 import * as email from "../../src/util/email-config";
 
 const sendVerifyEmailStub = sinon.stub(email, "sendVerifyEmail");
+const sendForgotPasswordEmailStub = sinon.stub(email, "sendForgotPasswordEmail");
 
 describe("account routes", function () {
     var mongod: MongoMemoryServer;
@@ -29,6 +31,7 @@ describe("account routes", function () {
 
     this.beforeEach(async () => {
         sendVerifyEmailStub.reset();
+        sendForgotPasswordEmailStub.reset();
         await User.deleteMany({});
         await Comic.deleteMany({});
         await Story.deleteMany({});
@@ -264,6 +267,34 @@ describe("account routes", function () {
             assert.equal(res.body.error, "not subscribed");
             assert.equal((await User.findById(user2.db!._id).exec())!.subscriberCount, 0);
             assert.deepEqual((await User.findById(user1.db!._id).exec())!.subscriptions, []);
+        });
+    });
+    describe("POST /account/forgot-password", function () {
+        it("should trigger a password reset email", async () => {
+            const user = await dummyUser();
+            await request(app)
+                .post("/account/forgot-password")
+                .send({ email: user.email })
+                .set("Content-Type", "application/json")
+                .expect(200);
+            assert.equal(sendForgotPasswordEmailStub.callCount, 1);
+        });
+        it("should error if no email is provided", async () => {
+            const res = await request(app)
+                .post("/account/forgot-password")
+                .set("Content-Type", "application/json")
+                .expect(400);
+            assert.equal(res.body.error, "Missing email");
+            assert.equal(sendForgotPasswordEmailStub.callCount, 0);
+        });
+        it("should error if no user exists with given email", async () => {
+            const res = await request(app)
+                .post("/account/forgot-password")
+                .send({ email: crypto.randomBytes(20).toString("hex") })
+                .set("Content-Type", "application/json")
+                .expect(400);
+            assert.equal(res.body.error, "No user with specified email");
+            assert.equal(sendForgotPasswordEmailStub.callCount, 0);
         });
     });
 });
