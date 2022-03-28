@@ -14,6 +14,7 @@ import Image from "../../src/models/image";
 import Story from "../../src/models/story";
 import createApp from "../../src/app";
 import * as email from "../../src/util/email-config";
+import { generateToken } from "../../src/util/token-config";
 
 const sendVerifyEmailStub = sinon.stub(email, "sendVerifyEmail");
 const sendForgotPasswordEmailStub = sinon.stub(email, "sendForgotPasswordEmail");
@@ -295,6 +296,71 @@ describe("account routes", function () {
                 .expect(400);
             assert.equal(res.body.error, "No user with specified email");
             assert.equal(sendForgotPasswordEmailStub.callCount, 0);
+        });
+    });
+    describe("POST /account/reset-password", function () {
+        it("should correctly reset a password", async () => {
+            const user = await dummyUser();
+            const token = generateToken(user.db!);
+            const password = crypto.randomBytes(20).toString("hex");
+            const res = await request(app)
+                .post("/account/reset-password")
+                .send({ id: user.db!._id, token, password })
+                .set("Content-Type", "application/json")
+                .expect(200);
+            user.login.password = password;
+            await request(app)
+                .post("/account/login")
+                .send(user.login)
+                .set("Content-Type", "application/json")
+                .expect(200);
+            assert.equal(res.body.message, "OK");
+        });
+        it("should fail if message body is missing information", async () => {
+            const user = await dummyUser();
+            const token = generateToken(user.db!);
+            const password = crypto.randomBytes(20).toString("hex");
+            const res1 = await request(app)
+                .post("/account/reset-password")
+                .send({ id: user.db!._id, token })
+                .set("Content-Type", "application/json")
+                .expect(400);
+            const res2 = await request(app)
+                .post("/account/reset-password")
+                .send({ id: user.db!._id, password })
+                .set("Content-Type", "application/json")
+                .expect(400);
+            const res3 = await request(app)
+                .post("/account/reset-password")
+                .send({ token, password })
+                .set("Content-Type", "application/json")
+                .expect(400);
+            assert.equal(res1.body.error, "Must provide all required arguments to reset password");
+            assert.equal(res2.body.error, "Must provide all required arguments to reset password");
+            assert.equal(res3.body.error, "Must provide all required arguments to reset password");
+        });
+        it("should fail if user does not exist", async () => {
+            const user = await dummyUser(true);
+            const token = generateToken(user.db!);
+            const password = crypto.randomBytes(20).toString("hex");
+            await User.deleteMany({});
+            const res = await request(app)
+                .post("/account/reset-password")
+                .send({ id: user.db!._id, token, password })
+                .set("Content-Type", "application/json")
+                .expect(400);
+            assert.equal(res.body.error, "User not found");
+        });
+        it("should fail if token is invalid", async () => {
+            const user = await dummyUser();
+            const token = crypto.randomBytes(20).toString("hex");
+            const password = crypto.randomBytes(20).toString("hex");
+            const res = await request(app)
+                .post("/account/reset-password")
+                .send({ id: user.db!._id, token, password })
+                .set("Content-Type", "application/json")
+                .expect(400);
+            assert.equal(res.body.error, "Token is invalid or expired");
         });
     });
 });
