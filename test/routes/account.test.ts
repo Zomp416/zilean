@@ -339,7 +339,7 @@ describe("account routes", function () {
             assert.equal(res3.body.error, "Must provide all required arguments to reset password");
         });
         it("should fail if user does not exist", async () => {
-            const user = await dummyUser(true);
+            const user = await dummyUser();
             const token = generateToken(user.db!);
             const password = "_";
             await User.deleteMany({});
@@ -388,6 +388,56 @@ describe("account routes", function () {
                 .expect(400);
             assert.equal(res.body.error, "No user with specified email");
             assert.equal(sendForgotPasswordEmailStub.callCount, 0);
+        });
+    });
+    describe("POST /account/verify", function () {
+        it("should correctly reset a password", async () => {
+            const user = await dummyUser();
+            const token = generateToken(user.db!);
+            const res = await request(app)
+                .post("/account/verify")
+                .send({ id: user.db!._id, token })
+                .set("Content-Type", "application/json")
+                .expect(200);
+            assert.equal(await User.countDocuments({ verified: true }), 1);
+            assert.equal(res.body.message, "OK");
+        });
+        it("should fail if message body is missing information", async () => {
+            const user = await dummyUser();
+            const token = generateToken(user.db!);
+            const res1 = await request(app)
+                .post("/account/verify")
+                .send({ id: user.db!._id })
+                .set("Content-Type", "application/json")
+                .expect(400);
+            const res2 = await request(app)
+                .post("/account/verify")
+                .send({ token })
+                .set("Content-Type", "application/json")
+                .expect(400);
+            assert.equal(res1.body.error, "Must provide all required arguments to verify user");
+            assert.equal(res2.body.error, "Must provide all required arguments to verify user");
+        });
+        it("should fail if user does not exist", async () => {
+            const user = await dummyUser();
+            const token = generateToken(user.db!);
+            await User.deleteMany({});
+            const res = await request(app)
+                .post("/account/verify")
+                .send({ id: user.db!._id, token })
+                .set("Content-Type", "application/json")
+                .expect(400);
+            assert.equal(res.body.error, "User not found");
+        });
+        it("should fail if token is invalid", async () => {
+            const user = await dummyUser();
+            const token = "_";
+            const res = await request(app)
+                .post("/account/verify")
+                .send({ id: user.db!._id, token })
+                .set("Content-Type", "application/json")
+                .expect(400);
+            assert.equal(res.body.error, "Token is invalid or expired");
         });
     });
 });
