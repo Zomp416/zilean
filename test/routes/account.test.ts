@@ -2,7 +2,7 @@ import assert from "assert";
 import sinon from "sinon";
 import { MongoMemoryServer } from "mongodb-memory-server";
 import { connect, disconnect } from "mongoose";
-import { Server } from "http";
+import { Express } from "express";
 
 const request = require("supertest-session");
 
@@ -20,13 +20,13 @@ const sendForgotPasswordEmailStub = sinon.stub(email, "sendForgotPasswordEmail")
 
 describe("account routes", function () {
     var mongod: MongoMemoryServer;
-    var app: Server;
+    var app: Express;
 
     this.beforeAll(async () => {
         mongod = await MongoMemoryServer.create();
         const uri = mongod.getUri();
         await connect(uri);
-        app = createApp(uri, "secret").listen(5000);
+        app = createApp(uri, "secret");
     });
 
     this.beforeEach(async () => {
@@ -40,8 +40,7 @@ describe("account routes", function () {
 
     this.afterAll(async () => {
         await mongod.stop();
-        disconnect();
-        app.close();
+        await disconnect();
     });
 
     describe("POST /account/login", function () {
@@ -72,6 +71,17 @@ describe("account routes", function () {
                 .set("Content-Type", "application/json")
                 .expect(401);
             assert.equal(res.body.error, "User not found.");
+        });
+        it("should fail if mongodb connection is lost", async () => {
+            const user = await dummyUser();
+            await disconnect();
+            const res = await request(app)
+                .post("/account/login")
+                .send(user.login)
+                .set("Content-Type", "application/json")
+                .expect(401);
+            await connect(mongod.getUri());
+            assert.equal(res.body.error, "mongodb server connection issue");
         });
     });
 
