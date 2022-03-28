@@ -1,6 +1,5 @@
 import assert from "assert";
 import sinon from "sinon";
-import crypto from "crypto";
 import { MongoMemoryServer } from "mongodb-memory-server";
 import { connect, disconnect } from "mongoose";
 import { Server } from "http";
@@ -291,7 +290,7 @@ describe("account routes", function () {
         it("should error if no user exists with given email", async () => {
             const res = await request(app)
                 .post("/account/forgot-password")
-                .send({ email: crypto.randomBytes(20).toString("hex") })
+                .send({ email: "_" })
                 .set("Content-Type", "application/json")
                 .expect(400);
             assert.equal(res.body.error, "No user with specified email");
@@ -302,7 +301,7 @@ describe("account routes", function () {
         it("should correctly reset a password", async () => {
             const user = await dummyUser();
             const token = generateToken(user.db!);
-            const password = crypto.randomBytes(20).toString("hex");
+            const password = "_";
             const res = await request(app)
                 .post("/account/reset-password")
                 .send({ id: user.db!._id, token, password })
@@ -319,7 +318,7 @@ describe("account routes", function () {
         it("should fail if message body is missing information", async () => {
             const user = await dummyUser();
             const token = generateToken(user.db!);
-            const password = crypto.randomBytes(20).toString("hex");
+            const password = "_";
             const res1 = await request(app)
                 .post("/account/reset-password")
                 .send({ id: user.db!._id, token })
@@ -342,7 +341,7 @@ describe("account routes", function () {
         it("should fail if user does not exist", async () => {
             const user = await dummyUser(true);
             const token = generateToken(user.db!);
-            const password = crypto.randomBytes(20).toString("hex");
+            const password = "_";
             await User.deleteMany({});
             const res = await request(app)
                 .post("/account/reset-password")
@@ -353,8 +352,8 @@ describe("account routes", function () {
         });
         it("should fail if token is invalid", async () => {
             const user = await dummyUser();
-            const token = crypto.randomBytes(20).toString("hex");
-            const password = crypto.randomBytes(20).toString("hex");
+            const token = "_";
+            const password = "_";
             const res = await request(app)
                 .post("/account/reset-password")
                 .send({ id: user.db!._id, token, password })
