@@ -297,7 +297,7 @@ router.post("/verify", async (req, res, next) => {
     const { id, token } = req.body;
 
     if (!id || !token) {
-        res.status(400).json({ error: "Must provide all required arguments to reset password" });
+        res.status(400).json({ error: "Must provide all required arguments to verify user" });
         return next();
     }
 

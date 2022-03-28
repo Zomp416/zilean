@@ -13,8 +13,10 @@ import Image from "../../src/models/image";
 import Story from "../../src/models/story";
 import createApp from "../../src/app";
 import * as email from "../../src/util/email-config";
+import { generateToken } from "../../src/util/token-config";
 
 const sendVerifyEmailStub = sinon.stub(email, "sendVerifyEmail");
+const sendForgotPasswordEmailStub = sinon.stub(email, "sendForgotPasswordEmail");
 
 describe("account routes", function () {
     var mongod: MongoMemoryServer;
@@ -28,6 +30,8 @@ describe("account routes", function () {
     });
 
     this.beforeEach(async () => {
+        sendVerifyEmailStub.reset();
+        sendForgotPasswordEmailStub.reset();
         await User.deleteMany({});
         await Comic.deleteMany({});
         await Story.deleteMany({});
@@ -84,6 +88,21 @@ describe("account routes", function () {
             const res = await request(app).get("/account").expect(401);
             assert.equal(res.body.error, "NOT LOGGED IN");
             assert.equal(res.body.data, undefined);
+        });
+    });
+
+    describe("GET /account/:id", function () {
+        it("should retrieve information of a given user", async () => {
+            const user = await dummyUser();
+            const res = await request(app).get(`/account/${user.db!._id}`).expect(200);
+            assert.equal(user.email, res.body.data.email);
+            assert.equal(user.username, res.body.data.username);
+        });
+        it("should error if user cannot be found", async () => {
+            const user = await dummyUser();
+            await User.deleteMany({});
+            const res = await request(app).get(`/account/${user.db!._id}`).expect(400);
+            assert.equal(res.body.error, "No user found");
         });
     });
 
@@ -154,6 +173,7 @@ describe("account routes", function () {
             assert.equal(res1.body.error, "Missing arguments in request");
             assert.equal(res2.body.error, "Missing arguments in request");
             assert.equal(res3.body.error, "Missing arguments in request");
+            assert.equal(sendVerifyEmailStub.callCount, 0);
         });
         it("should fail if username or email are already taken", async () => {
             const user = await dummyUser();
@@ -177,6 +197,7 @@ describe("account routes", function () {
                 res2.body.error,
                 "Account with that email address and/or username already exists."
             );
+            assert.equal(sendVerifyEmailStub.callCount, 0);
         });
     });
     describe("POST /account/subscribe", function () {
@@ -261,6 +282,177 @@ describe("account routes", function () {
             assert.equal(res.body.error, "not subscribed");
             assert.equal((await User.findById(user2.db!._id).exec())!.subscriberCount, 0);
             assert.deepEqual((await User.findById(user1.db!._id).exec())!.subscriptions, []);
+        });
+    });
+    describe("POST /account/forgot-password", function () {
+        it("should trigger a password reset email", async () => {
+            const user = await dummyUser();
+            await request(app)
+                .post("/account/forgot-password")
+                .send({ email: user.email })
+                .set("Content-Type", "application/json")
+                .expect(200);
+            assert.equal(sendForgotPasswordEmailStub.callCount, 1);
+        });
+        it("should error if no email is provided", async () => {
+            const res = await request(app)
+                .post("/account/forgot-password")
+                .set("Content-Type", "application/json")
+                .expect(400);
+            assert.equal(res.body.error, "Missing email");
+            assert.equal(sendForgotPasswordEmailStub.callCount, 0);
+        });
+        it("should error if no user exists with given email", async () => {
+            const res = await request(app)
+                .post("/account/forgot-password")
+                .send({ email: "_" })
+                .set("Content-Type", "application/json")
+                .expect(400);
+            assert.equal(res.body.error, "No user with specified email");
+            assert.equal(sendForgotPasswordEmailStub.callCount, 0);
+        });
+    });
+    describe("POST /account/reset-password", function () {
+        it("should correctly reset a password", async () => {
+            const user = await dummyUser();
+            const token = generateToken(user.db!);
+            const password = "_";
+            const res = await request(app)
+                .post("/account/reset-password")
+                .send({ id: user.db!._id, token, password })
+                .set("Content-Type", "application/json")
+                .expect(200);
+            user.login.password = password;
+            await request(app)
+                .post("/account/login")
+                .send(user.login)
+                .set("Content-Type", "application/json")
+                .expect(200);
+            assert.equal(res.body.message, "OK");
+        });
+        it("should fail if message body is missing information", async () => {
+            const user = await dummyUser();
+            const token = generateToken(user.db!);
+            const password = "_";
+            const res1 = await request(app)
+                .post("/account/reset-password")
+                .send({ id: user.db!._id, token })
+                .set("Content-Type", "application/json")
+                .expect(400);
+            const res2 = await request(app)
+                .post("/account/reset-password")
+                .send({ id: user.db!._id, password })
+                .set("Content-Type", "application/json")
+                .expect(400);
+            const res3 = await request(app)
+                .post("/account/reset-password")
+                .send({ token, password })
+                .set("Content-Type", "application/json")
+                .expect(400);
+            assert.equal(res1.body.error, "Must provide all required arguments to reset password");
+            assert.equal(res2.body.error, "Must provide all required arguments to reset password");
+            assert.equal(res3.body.error, "Must provide all required arguments to reset password");
+        });
+        it("should fail if user does not exist", async () => {
+            const user = await dummyUser();
+            const token = generateToken(user.db!);
+            const password = "_";
+            await User.deleteMany({});
+            const res = await request(app)
+                .post("/account/reset-password")
+                .send({ id: user.db!._id, token, password })
+                .set("Content-Type", "application/json")
+                .expect(400);
+            assert.equal(res.body.error, "User not found");
+        });
+        it("should fail if token is invalid", async () => {
+            const user = await dummyUser();
+            const token = "_";
+            const password = "_";
+            const res = await request(app)
+                .post("/account/reset-password")
+                .send({ id: user.db!._id, token, password })
+                .set("Content-Type", "application/json")
+                .expect(400);
+            assert.equal(res.body.error, "Token is invalid or expired");
+        });
+    });
+    describe("POST /account/send-verify", function () {
+        it("should trigger a verification email", async () => {
+            const user = await dummyUser();
+            await request(app)
+                .post("/account/send-verify")
+                .send({ email: user.email })
+                .set("Content-Type", "application/json")
+                .expect(200);
+            assert.equal(sendVerifyEmailStub.callCount, 1);
+        });
+        it("should error if no email is provided", async () => {
+            const res = await request(app)
+                .post("/account/send-verify")
+                .set("Content-Type", "application/json")
+                .expect(400);
+            assert.equal(res.body.error, "Missing email");
+            assert.equal(sendForgotPasswordEmailStub.callCount, 0);
+        });
+        it("should error if no user exists with given email", async () => {
+            const res = await request(app)
+                .post("/account/send-verify")
+                .send({ email: "_" })
+                .set("Content-Type", "application/json")
+                .expect(400);
+            assert.equal(res.body.error, "No user with specified email");
+            assert.equal(sendForgotPasswordEmailStub.callCount, 0);
+        });
+    });
+    describe("POST /account/verify", function () {
+        it("should correctly reset a password", async () => {
+            const user = await dummyUser();
+            const token = generateToken(user.db!);
+            const res = await request(app)
+                .post("/account/verify")
+                .send({ id: user.db!._id, token })
+                .set("Content-Type", "application/json")
+                .expect(200);
+            assert.equal(await User.countDocuments({ verified: true }), 1);
+            assert.equal(res.body.message, "OK");
+        });
+        it("should fail if message body is missing information", async () => {
+            const user = await dummyUser();
+            const token = generateToken(user.db!);
+            const res1 = await request(app)
+                .post("/account/verify")
+                .send({ id: user.db!._id })
+                .set("Content-Type", "application/json")
+                .expect(400);
+            const res2 = await request(app)
+                .post("/account/verify")
+                .send({ token })
+                .set("Content-Type", "application/json")
+                .expect(400);
+            assert.equal(res1.body.error, "Must provide all required arguments to verify user");
+            assert.equal(res2.body.error, "Must provide all required arguments to verify user");
+        });
+        it("should fail if user does not exist", async () => {
+            const user = await dummyUser();
+            const token = generateToken(user.db!);
+            await User.deleteMany({});
+            const res = await request(app)
+                .post("/account/verify")
+                .send({ id: user.db!._id, token })
+                .set("Content-Type", "application/json")
+                .expect(400);
+            assert.equal(res.body.error, "User not found");
+        });
+        it("should fail if token is invalid", async () => {
+            const user = await dummyUser();
+            const token = "_";
+            const res = await request(app)
+                .post("/account/verify")
+                .send({ id: user.db!._id, token })
+                .set("Content-Type", "application/json")
+                .expect(400);
+            assert.equal(res.body.error, "Token is invalid or expired");
         });
     });
 });
