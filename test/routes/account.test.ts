@@ -461,7 +461,7 @@ describe("account routes", function () {
             const res = await request(app).get("/account/search").expect(200);
             assert.equal(res.body.data.length, 5);
         });
-        it("find users that match a regex", async () => {
+        it("should find users that match a regex", async () => {
             const user = await dummyUser();
             const res1 = await request(app)
                 .get(`/account/search?value=${user.username}`)
@@ -473,6 +473,28 @@ describe("account routes", function () {
             assert.equal(res2.body.data.length, 1);
             assert.equal(res1.body.data[0].username, user.username);
             assert.equal(res2.body.data[0].username, user.username);
+        });
+        it("should filter by subscriptions", async () => {
+            const user1 = await dummyUser();
+            const user2 = await dummyUser();
+            const session = request(app);
+            await session
+                .post("/account/login")
+                .send(user1.login)
+                .set("Content-Type", "application/json");
+            await session
+                .post("/account/subscribe")
+                .send({ subscription: user2.db!._id })
+                .set("Content-Type", "application/json");
+            const res1 = await session.get("/account/search?subscriptions=true").expect(200);
+            const res2 = await session.get("/account/search").expect(200);
+            assert.equal(res1.body.data.length, 1);
+            assert.equal(res2.body.data.length, 2);
+            assert.equal(res1.body.data[0].username, user2.username);
+        });
+        it("should fail subscription filter when unauthenticated", async () => {
+            const res = await request(app).get("/account/search?subscriptions=true").expect(400);
+            assert.equal(res.body.error, "Must be logged in to show subscriptions");
         });
     });
 });
