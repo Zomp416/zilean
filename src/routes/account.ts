@@ -29,7 +29,7 @@ router.get("/search", async (req, res, next) => {
         }
         const user = req.user as IUser;
         queryFilters.push({
-            uploadedBy: {
+            _id: {
                 $in: user.subscriptions,
             },
         });
