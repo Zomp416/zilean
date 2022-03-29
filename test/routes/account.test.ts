@@ -1,4 +1,4 @@
-import assert from "assert";
+import assert, { strictEqual } from "assert";
 import sinon from "sinon";
 import { MongoMemoryServer } from "mongodb-memory-server";
 import { connect, disconnect } from "mongoose";
@@ -453,6 +453,26 @@ describe("account routes", function () {
                 .set("Content-Type", "application/json")
                 .expect(400);
             assert.equal(res.body.error, "Token is invalid or expired");
+        });
+    });
+    describe("GET /account/search", function () {
+        it("should find all users (empty search)", async () => {
+            for (let i = 0; i < 5; i++) await dummyUser();
+            const res = await request(app).get("/account/search").expect(200);
+            assert.equal(res.body.data.length, 5);
+        });
+        it("find users that match a regex", async () => {
+            const user = await dummyUser();
+            const res1 = await request(app)
+                .get(`/account/search?value=${user.username}`)
+                .expect(200);
+            const res2 = await request(app)
+                .get(`/account/search?value=${user.username.slice(5, 10)}`)
+                .expect(200);
+            assert.equal(res1.body.data.length, 1);
+            assert.equal(res2.body.data.length, 1);
+            assert.equal(res1.body.data[0].username, user.username);
+            assert.equal(res2.body.data[0].username, user.username);
         });
     });
 });
