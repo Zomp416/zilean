@@ -1,4 +1,4 @@
-import assert, { strictEqual } from "assert";
+import assert from "assert";
 import sinon from "sinon";
 import { MongoMemoryServer } from "mongodb-memory-server";
 import { connect, disconnect } from "mongoose";
