@@ -2,15 +2,12 @@ import assert from "assert";
 import sinon from "sinon";
 import { MongoMemoryServer } from "mongodb-memory-server";
 import { connect, disconnect } from "mongoose";
-import { Server } from "http";
+import { Express } from "express";
 
 const request = require("supertest-session");
 
 import { dummyUser } from "../dummy";
-import Comic from "../../src/models/comic";
 import User from "../../src/models/user";
-import Image from "../../src/models/image";
-import Story from "../../src/models/story";
 import createApp from "../../src/app";
 import * as email from "../../src/util/email-config";
 import { generateToken } from "../../src/util/token-config";
@@ -20,28 +17,20 @@ const sendForgotPasswordEmailStub = sinon.stub(email, "sendForgotPasswordEmail")
 
 describe("account routes", function () {
     var mongod: MongoMemoryServer;
-    var app: Server;
+    var app: Express;
 
-    this.beforeAll(async () => {
+    this.beforeEach(async () => {
         mongod = await MongoMemoryServer.create();
         const uri = mongod.getUri();
         await connect(uri);
-        app = createApp(uri, "secret").listen(5000);
-    });
-
-    this.beforeEach(async () => {
+        app = createApp(uri, "_");
         sendVerifyEmailStub.reset();
         sendForgotPasswordEmailStub.reset();
-        await User.deleteMany({});
-        await Comic.deleteMany({});
-        await Story.deleteMany({});
-        await Image.deleteMany({});
     });
 
-    this.afterAll(async () => {
+    this.afterEach(async () => {
+        await disconnect();
         await mongod.stop();
-        disconnect();
-        app.close();
     });
 
     describe("POST /account/login", function () {
@@ -72,6 +61,17 @@ describe("account routes", function () {
                 .set("Content-Type", "application/json")
                 .expect(401);
             assert.equal(res.body.error, "User not found.");
+        });
+        it("should fail if mongodb connection is lost", async () => {
+            const user = await dummyUser();
+            await disconnect();
+            const res = await request(app)
+                .post("/account/login")
+                .send(user.login)
+                .set("Content-Type", "application/json")
+                .expect(401);
+            await connect(mongod.getUri());
+            assert.equal(res.body.error, "mongodb server connection issue");
         });
     });
 
@@ -453,6 +453,48 @@ describe("account routes", function () {
                 .set("Content-Type", "application/json")
                 .expect(400);
             assert.equal(res.body.error, "Token is invalid or expired");
+        });
+    });
+    describe("GET /account/search", function () {
+        it("should find all users (empty search)", async () => {
+            for (let i = 0; i < 5; i++) await dummyUser();
+            const res = await request(app).get("/account/search").expect(200);
+            assert.equal(res.body.data.length, 5);
+        });
+        it("should find users that match a regex", async () => {
+            const user = await dummyUser();
+            const res1 = await request(app)
+                .get(`/account/search?value=${user.username}`)
+                .expect(200);
+            const res2 = await request(app)
+                .get(`/account/search?value=${user.username.slice(5, 10)}`)
+                .expect(200);
+            assert.equal(res1.body.data.length, 1);
+            assert.equal(res2.body.data.length, 1);
+            assert.equal(res1.body.data[0].username, user.username);
+            assert.equal(res2.body.data[0].username, user.username);
+        });
+        it("should filter by subscriptions", async () => {
+            const user1 = await dummyUser();
+            const user2 = await dummyUser();
+            const session = request(app);
+            await session
+                .post("/account/login")
+                .send(user1.login)
+                .set("Content-Type", "application/json");
+            await session
+                .post("/account/subscribe")
+                .send({ subscription: user2.db!._id })
+                .set("Content-Type", "application/json");
+            const res1 = await session.get("/account/search?subscriptions=true").expect(200);
+            const res2 = await session.get("/account/search").expect(200);
+            assert.equal(res1.body.data.length, 1);
+            assert.equal(res2.body.data.length, 2);
+            assert.equal(res1.body.data[0].username, user2.username);
+        });
+        it("should fail subscription filter when unauthenticated", async () => {
+            const res = await request(app).get("/account/search?subscriptions=true").expect(400);
+            assert.equal(res.body.error, "Must be logged in to show subscriptions");
         });
     });
 });
