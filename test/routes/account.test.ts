@@ -29,8 +29,8 @@ describe("account routes", function () {
     });
 
     this.afterEach(async () => {
-        await mongod.stop();
         await disconnect();
+        await mongod.stop();
     });
 
     describe("POST /account/login", function () {
