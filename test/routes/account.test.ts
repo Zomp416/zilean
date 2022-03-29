@@ -200,6 +200,41 @@ describe("account routes", function () {
             assert.equal(sendVerifyEmailStub.callCount, 0);
         });
     });
+
+    describe("PUT /account", function () {
+        it("should update username", async () => {
+            const user = await dummyUser();
+            const session = request(app);
+            await session.post("/account/login").send(user.login);
+            const res = await session
+                .put("/account")
+                .send({ user: { username: "_" } })
+                .set("Content-Type", "application/json")
+                .expect(200);
+            assert.equal(res.body.data.username, "_");
+            assert.equal(res.body.data._id, user.db!._id);
+            assert.equal((await User.findOne({}).exec())!.username, "_");
+        });
+        it("should fail if request body is missing information", async () => {
+            const user = await dummyUser();
+            const session = request(app);
+            await session.post("/account/login").send(user.login);
+            const res = await session.put("/account").expect(400);
+            assert.equal(res.body.error, "Missing arguments");
+        });
+        it("should fail if trying to change _id", async () => {
+            const user = await dummyUser();
+            const session = request(app);
+            await session.post("/account/login").send(user.login);
+            const res = await session
+                .put("/account")
+                .send({ user: { _id: "_" } })
+                .set("Content-Type", "application/json")
+                .expect(401);
+            assert.equal(res.body.error, "User ID's do not match.");
+        });
+    });
+
     describe("POST /account/subscribe", function () {
         it("should successfully make a subscription", async () => {
             const user1 = await dummyUser();
@@ -495,6 +530,15 @@ describe("account routes", function () {
         it("should fail subscription filter when unauthenticated", async () => {
             const res = await request(app).get("/account/search?subscriptions=true").expect(400);
             assert.equal(res.body.error, "Must be logged in to show subscriptions");
+        });
+        it("should sort results correctly", async () => {
+            for (let i = 0; i < 5; i++) await dummyUser();
+            const res = await request(app).get("/account/search?sort=username").expect(200);
+            const data = res.body.data;
+            assert.equal(data[0].username < data[1].username, true);
+            assert.equal(data[1].username < data[2].username, true);
+            assert.equal(data[2].username < data[3].username, true);
+            assert.equal(data[3].username < data[4].username, true);
         });
     });
 });

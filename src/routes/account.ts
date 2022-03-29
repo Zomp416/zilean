@@ -178,12 +178,12 @@ router.put("/", isAuthenticated, async (req, res, next) => {
         return next();
     }
 
-    if (newUser._id !== oldUser._id) {
+    if (newUser._id && newUser._id !== oldUser._id) {
         res.status(401).json({ error: "User ID's do not match." });
         return next();
     }
 
-    const user = await oldUser.update(newUser);
+    const user = await User.findByIdAndUpdate(oldUser._id, newUser, { returnDocument: "after" });
 
     res.status(200).json({ data: user });
     return next();
