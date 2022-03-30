@@ -19,7 +19,12 @@ passport.deserializeUser((id, done) => {
 passport.use(
     new LocalStrategy({ usernameField: "email" }, async (email, password, done) => {
         // Find user with given email
-        const user = await User.findOne({ email: email });
+        let err;
+        const user = await User.findOne({ email: email.toLowerCase() }).catch(e => {
+            err = "mongodb server connection issue";
+        });
+        if (err) return done(err);
+
         if (!user) {
             return done(undefined, false, { message: "User not found." });
         }

@@ -2,8 +2,10 @@ import express from "express";
 import session from "express-session";
 import cors from "cors";
 import MongoStore from "connect-mongo";
+import mongoSanitize from "express-mongo-sanitize";
+import helmet from "helmet";
 import passport from "./util/passport-config";
-import userRouter from "./routes/user";
+import accountRouter from "./routes/account";
 import comicRouter from "./routes/comic";
 import imageRouter from "./routes/image";
 
@@ -15,8 +17,10 @@ const createApp = (mongo_uri: string, session_secret: string) => {
     allowedOrigins.forEach(origin => {
         app.use(cors({ origin: origin, credentials: true }));
     });
+    app.use(helmet());
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
+    app.use(mongoSanitize());
     app.use(
         session({
             resave: true,
@@ -35,7 +39,7 @@ const createApp = (mongo_uri: string, session_secret: string) => {
         next();
     });
 
-    app.use("/account", userRouter);
+    app.use("/account", accountRouter);
     app.use("/comic", comicRouter);
     app.use("/image", imageRouter);
 

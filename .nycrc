@@ -4,6 +4,7 @@
   "exclude": [
     "dist",
     "coverage",
-    "test"
+    "test",
+    "src/index.ts"
   ]
 }

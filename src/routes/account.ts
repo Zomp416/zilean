@@ -10,8 +10,75 @@ const router = express.Router();
 // ROUTE TO CHECK IF LOGGED IN
 router.get("/", isAuthenticated, (req, res, next) => {
     const user = req.user as IUser;
-    res.status(200).json({ user });
+    res.status(200).json({ data: user });
     return next();
+});
+
+// SEARCH USERS
+router.get("/search", async (req, res, next) => {
+    const userQuery = User.find();
+
+    // NO PRELIMINARY FILTERS
+    const queryFilters: any[] = [];
+
+    // SUBSCRIPTIONS FILTER
+    if (req.query.subscriptions === "true") {
+        if (!req.isAuthenticated()) {
+            res.status(400).json({ error: "Must be logged in to show subscriptions" });
+            return next();
+        }
+        const user = req.user as IUser;
+        queryFilters.push({
+            _id: {
+                $in: user.subscriptions,
+            },
+        });
+    }
+
+    // NAME FILTER
+    if (req.query.value) {
+        const nameFilter = req.query.value as string;
+        queryFilters.push({
+            username: {
+                $regex: new RegExp(nameFilter, "i"),
+            },
+        });
+    }
+
+    // TAGS FILTER - CURRENTLY NOT SUPPORTED FOR USERS...
+    // if (req.query.tags) {
+    //     if (Array.isArray(req.query.tags)) {
+    //         const tags = req.query.tags as string[];
+    //         queryFilters.push({
+    //             tags: {
+    //                 $all: tags,
+    //             },
+    //         });
+    //     } else {
+    //         const tag = req.query.tags;
+    //         queryFilters.push({
+    //             tags: tag,
+    //         });
+    //     }
+    // }
+
+    // ADD FILTERS TO QUERY
+    if (queryFilters.length !== 0) {
+        userQuery.and(queryFilters);
+    }
+
+    // SORT RESULTS (ex: subscriberCount)
+    if (req.query.sort) {
+        userQuery.sort(req.query.sort);
+    }
+
+    // TODO PAGINATION AND LIMITS
+
+    // EXECUTE QUERY
+    const users = await userQuery.exec();
+
+    res.status(200).json({ data: users });
+    return;
 });
 
 // GET USER
@@ -21,7 +88,7 @@ router.get("/:id", async (req, res, next) => {
         res.status(400).json({ error: "No user found" });
         return next();
     }
-    res.status(200).json(user);
+    res.status(200).json({ data: user });
     return next();
 });
 
@@ -30,16 +97,16 @@ router.post("/login", (req, res, next) => {
     // Pass request information to passport
     passport.authenticate("local", function (err, user, info) {
         if (err) {
-            return res.status(401).json({ errors: err });
+            return res.status(401).json({ error: err });
         }
         if (!user) {
-            return res.status(401).json({ errors: "No user found" });
+            return res.status(401).json({ error: info.message });
         }
         req.login(user, function (err) {
             if (err) {
-                return res.status(401).json({ errors: err });
+                return res.status(401).json({ error: err });
             }
-            return res.status(200).json({ success: `logged in ${user.id}` });
+            return res.status(200).json({ message: `logged in ${user.id}` });
         });
     })(req, res, next);
 });
@@ -47,17 +114,19 @@ router.post("/login", (req, res, next) => {
 // LOGOUT
 router.post("/logout", (req, res, next) => {
     req.logout();
-    res.json({ msg: "Logged Out!" });
+    res.json({ message: "Logged Out!" });
     return next();
 });
 
 // REGISTER
 router.post("/register", async (req, res, next) => {
-    const { email, username, password } = req.body;
+    let { email, username, password } = req.body;
     if (!email || !username || !password) {
-        res.status(400).json({ msg: "Missing arguments in request" });
+        res.status(400).json({ error: "Missing arguments in request" });
         return next();
     }
+
+    email = (email as string).toLowerCase();
 
     const existingUser = await User.findOne({
         $or: [
@@ -72,7 +141,7 @@ router.post("/register", async (req, res, next) => {
 
     if (existingUser) {
         res.status(400).json({
-            msg: "Account with that email address and/or username already exists.",
+            error: "Account with that email address and/or username already exists.",
         });
         return next();
     }
@@ -91,9 +160,9 @@ router.post("/register", async (req, res, next) => {
     // Automatically Login User
     req.login(user, err => {
         if (err) {
-            res.status(200).json({ msg: "Registered Successfully, Unable to Login." });
+            res.status(200).json({ message: "Registered Successfully, Unable to Login." });
         } else {
-            res.status(200).json({ msg: "Registered Successfully!" });
+            res.status(200).json({ message: "Registered Successfully!" });
         }
     });
     return next();
@@ -116,7 +185,41 @@ router.put("/", isAuthenticated, async (req, res, next) => {
 
     const user = await oldUser.update(newUser);
 
-    res.status(200).json(user);
+    res.status(200).json({ data: user });
+    return next();
+});
+
+// SUBSCRIBE TO ANOTHER USER
+router.post("/subscribe", isAuthenticated, async (req, res, next) => {
+    const user = req.user as IUser;
+    const { subscription, ..._ } = req.body;
+
+    if (user.subscriptions.includes(subscription))
+        return res.status(400).json({ error: "already subscribed" });
+
+    await User.findByIdAndUpdate(user._id, {
+        $push: { subscriptions: subscription },
+    });
+    await User.findByIdAndUpdate(subscription, { $inc: { subscriberCount: 1 } });
+
+    res.status(200).json({ message: "subscribed successfully" });
+    return next();
+});
+
+// UNSUBSCRIBE FROM ANOTHER USER
+router.post("/unsubscribe", isAuthenticated, async (req, res, next) => {
+    const user = req.user as IUser;
+    const { subscription, ..._ } = req.body;
+
+    if (!user.subscriptions.includes(subscription))
+        return res.status(400).json({ error: "not subscribed" });
+
+    await User.findByIdAndUpdate(user._id, {
+        $pull: { subscriptions: subscription },
+    });
+    await User.findByIdAndUpdate(subscription, { $inc: { subscriberCount: -1 } });
+
+    res.status(200).json({ message: "unsubscribed successfully" });
     return next();
 });
 
@@ -136,7 +239,7 @@ router.post("/forgot-password", async (req, res, next) => {
 
     const result = await sendForgotPasswordEmail(user);
 
-    res.status(200).json(result);
+    res.status(200).json({ message: result });
     return next();
 });
 
@@ -165,7 +268,7 @@ router.post("/reset-password", async (req, res, next) => {
     user.password = await bcrypt.hash(password, 10);
     await user.save();
 
-    res.status(200).json({ msg: "OK" });
+    res.status(200).json({ message: "OK" });
     return next();
 });
 
@@ -185,7 +288,7 @@ router.post("/send-verify", async (req, res, next) => {
 
     const result = await sendVerifyEmail(user);
 
-    res.status(200).json(result);
+    res.status(200).json({ message: result });
     return next();
 });
 
@@ -194,7 +297,7 @@ router.post("/verify", async (req, res, next) => {
     const { id, token } = req.body;
 
     if (!id || !token) {
-        res.status(400).json({ error: "Must provide all required arguments to reset password" });
+        res.status(400).json({ error: "Must provide all required arguments to verify user" });
         return next();
     }
 
@@ -214,7 +317,7 @@ router.post("/verify", async (req, res, next) => {
     user.verified = true;
     await user.save();
 
-    res.status(200).json({ msg: "OK" });
+    res.status(200).json({ message: "OK" });
     return next();
 });
 
