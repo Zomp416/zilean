@@ -188,6 +188,7 @@ router.delete("/:id", isAuthenticated, async (req, res, next) => {
     }
 
     await comic.delete();
+    await User.findByIdAndUpdate(user._id, { $pull: { comics: comic._id } });
     res.status(200).json({ message: "Successfully deleted comic." });
     return next();
 });
