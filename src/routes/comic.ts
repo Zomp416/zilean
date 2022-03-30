@@ -59,9 +59,9 @@ router.get("/search", async (req, res, next) => {
         } else if (timeFilter === "month") {
             timeBoundary.setMonth(timeBoundary.getMonth() - 1);
         } else if (timeFilter === "week") {
-            timeBoundary = new Date(timeBoundary.getMilliseconds() - 7 * 60 * 60 * 24 * 1000);
+            timeBoundary = new Date(timeBoundary.getTime() - 7 * 60 * 60 * 24 * 1000);
         } else if (timeFilter === "day") {
-            timeBoundary = new Date(timeBoundary.getMilliseconds() - 60 * 60 * 24 * 1000);
+            timeBoundary = new Date(timeBoundary.getTime() - 60 * 60 * 24 * 1000);
         }
         queryFilters.push({
             publishedAt: {
@@ -188,6 +188,7 @@ router.delete("/:id", isAuthenticated, async (req, res, next) => {
     }
 
     await comic.delete();
+    await User.findByIdAndUpdate(user._id, { $pull: { comics: comic._id } });
     res.status(200).json({ message: "Successfully deleted comic." });
     return next();
 });

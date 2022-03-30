@@ -26,12 +26,17 @@ export const dummyUser = async ({
     return db;
 };
 
-export const dummyComic = async (
-    userid: Types.ObjectId = new Types.ObjectId(crypto.randomBytes(12))
-) => {
+export const dummyComic = async ({
+    userid = new Types.ObjectId(crypto.randomBytes(12)),
+    publishedAt = undefined,
+}: {
+    userid?: Types.ObjectId;
+    publishedAt?: Date;
+} = {}) => {
     const comic = new Comic({
         title: crypto.randomBytes(20).toString("hex"),
         author: userid,
+        publishedAt,
     });
     await comic.save();
 
