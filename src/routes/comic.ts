@@ -142,7 +142,7 @@ router.post("/", isAuthenticated, async (req, res, next) => {
 // UPDATE COMIC - AUTH
 router.put("/:id", isAuthenticated, async (req, res, next) => {
     const user = req.user as IUser;
-    const comic = await Comic.findById(req.params.id);
+    let comic = await Comic.findById(req.params.id);
 
     if (!comic) {
         res.status(400).json({ error: "No comic found" });
@@ -154,14 +154,14 @@ router.put("/:id", isAuthenticated, async (req, res, next) => {
         return next();
     }
 
-    if (comic.author !== user._id) {
+    if (comic.author.toString() !== user._id.toString()) {
         res.status(401).json({ error: "Must be the author to update comic." });
         return next();
     }
 
     // TODO assert that req.body.comic is actually a comic
     const updatedComic = req.body.comic as IComic;
-    await comic.update(updatedComic);
+    comic = await Comic.findByIdAndUpdate(comic._id, updatedComic, { returnDocument: "after" });
 
     res.status(200).json({ data: comic });
     return next();
@@ -182,7 +182,7 @@ router.delete("/:id", isAuthenticated, async (req, res, next) => {
         return next();
     }
 
-    if (comic.author !== user._id) {
+    if (comic.author.toString() !== user._id.toString()) {
         res.status(401).json({ error: "Must be the author to delete comic." });
         return next();
     }

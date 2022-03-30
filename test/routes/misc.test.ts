@@ -19,8 +19,8 @@ describe("misc routes", function () {
     });
 
     this.afterEach(async () => {
-        await mongod.stop();
         await disconnect();
+        await mongod.stop();
     });
 
     describe("GET /", function () {
