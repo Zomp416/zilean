@@ -182,7 +182,7 @@ router.delete("/:id", isAuthenticated, async (req, res, next) => {
         return next();
     }
 
-    if (comic.author !== user._id) {
+    if (comic.author.toString() !== user._id.toString()) {
         res.status(401).json({ error: "Must be the author to delete comic." });
         return next();
     }

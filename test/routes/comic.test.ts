@@ -105,4 +105,45 @@ describe("comic routes", function () {
             assert.equal(res.body.error, "NOT LOGGED IN");
         });
     });
+
+    describe("DEL /comic/:id", function () {
+        it("should delete a comic", async () => {
+            const session = request(app);
+            const user = await dummyUser({ session });
+            const comic = await dummyComic(user._id);
+            const res = await session.delete(`/comic/${comic._id}`).expect(200);
+            assert.equal(res.body.message, "Successfully deleted comic.");
+            assert.equal(await Comic.countDocuments(), 0);
+        });
+        it("should fail if comic does not exist", async () => {
+            const session = request(app);
+            await dummyUser({ session });
+            const comic = await dummyComic();
+            await Comic.deleteMany({});
+            const res = await session.delete(`/comic/${comic._id}`).expect(400);
+            assert.equal(res.body.error, "No comic found");
+        });
+        it("should fail if user is unverified", async () => {
+            const session = request(app);
+            const user = await dummyUser({ session, verified: false });
+            const comic = await dummyComic(user._id);
+            const res = await session.delete(`/comic/${comic._id}`).expect(401);
+            assert.equal(res.body.error, "Must be verified to delete a comic.");
+            assert.equal(await Comic.countDocuments(), 1);
+        });
+        it("should fail if user is not the author", async () => {
+            const session = request(app);
+            await dummyUser({ session });
+            const comic = await dummyComic();
+            const res = await session.delete(`/comic/${comic._id}`).expect(401);
+            assert.equal(res.body.error, "Must be the author to delete comic.");
+            assert.equal(await Comic.countDocuments(), 1);
+        });
+        it("should fail if user is not logged in", async () => {
+            const comic = await dummyComic();
+            const res = await request(app).put(`/comic/${comic._id}`).expect(401);
+            assert.equal(res.body.error, "NOT LOGGED IN");
+            assert.equal(await Comic.countDocuments(), 1);
+        });
+    });
 });
