@@ -68,7 +68,7 @@ describe("comic routes", function () {
         it("should update a comic", async () => {
             const session = request(app);
             const user = await dummyUser({ session });
-            const comic = await dummyComic(user._id);
+            const comic = await dummyComic({ userid: user._id });
             const res = await session
                 .put(`/comic/${comic._id}`)
                 .send({ comic: { title: "_" } })
@@ -88,7 +88,7 @@ describe("comic routes", function () {
         it("should fail if user is unverified", async () => {
             const session = request(app);
             const user = await dummyUser({ session, verified: false });
-            const comic = await dummyComic(user._id);
+            const comic = await dummyComic({ userid: user._id });
             const res = await session.put(`/comic/${comic._id}`).expect(401);
             assert.equal(res.body.error, "Must be verified to update a comic.");
         });
@@ -110,10 +110,11 @@ describe("comic routes", function () {
         it("should delete a comic", async () => {
             const session = request(app);
             const user = await dummyUser({ session });
-            const comic = await dummyComic(user._id);
+            const comic = await dummyComic({ userid: user._id });
             const res = await session.delete(`/comic/${comic._id}`).expect(200);
             assert.equal(res.body.message, "Successfully deleted comic.");
             assert.equal(await Comic.countDocuments(), 0);
+            assert.equal((await User.findById(user._id).exec())!.comics.length, 0);
         });
         it("should fail if comic does not exist", async () => {
             const session = request(app);
@@ -126,7 +127,7 @@ describe("comic routes", function () {
         it("should fail if user is unverified", async () => {
             const session = request(app);
             const user = await dummyUser({ session, verified: false });
-            const comic = await dummyComic(user._id);
+            const comic = await dummyComic({ userid: user._id });
             const res = await session.delete(`/comic/${comic._id}`).expect(401);
             assert.equal(res.body.error, "Must be verified to delete a comic.");
             assert.equal(await Comic.countDocuments(), 1);
@@ -144,6 +145,84 @@ describe("comic routes", function () {
             const res = await request(app).put(`/comic/${comic._id}`).expect(401);
             assert.equal(res.body.error, "NOT LOGGED IN");
             assert.equal(await Comic.countDocuments(), 1);
+        });
+    });
+
+    describe("GET /comic/search", function () {
+        it("should find all comics (empty search)", async () => {
+            for (let i = 0; i < 5; i++) await dummyComic({ publishedAt: new Date() });
+            const res = await request(app).get("/comic/search").expect(200);
+            assert.equal(res.body.data.length, 5);
+        });
+        it("should filter by subscriptions", async () => {
+            const user = await dummyUser();
+            const comic = await dummyComic({ userid: user._id, publishedAt: new Date() });
+            await dummyComic({ publishedAt: new Date() });
+            const session = request(app);
+            await dummyUser({ session });
+            await session.post("/account/subscribe").send({ subscription: user._id });
+            const res1 = await session.get("/comic/search?subscriptions=true").expect(200);
+            const res2 = await session.get("/comic/search").expect(200);
+            assert.equal(res1.body.data.length, 1);
+            assert.equal(res2.body.data.length, 2);
+            assert.equal(res1.body.data[0]._id, comic._id);
+        });
+        it("should fail subscription filter when unauthenticated", async () => {
+            const res = await request(app).get("/comic/search?subscriptions=true").expect(400);
+            assert.equal(res.body.error, "Must be logged in to show subscriptions");
+        });
+        it("should filter by author", async () => {
+            const user = await dummyUser();
+            const comic = await dummyComic({ userid: user._id, publishedAt: new Date() });
+            await dummyComic({ publishedAt: new Date() });
+            const res1 = await request(app).get(`/comic/search?author=${user._id}`).expect(200);
+            const res2 = await request(app).get("/comic/search").expect(200);
+            assert.equal(res1.body.data.length, 1);
+            assert.equal(res2.body.data.length, 2);
+            assert.equal(res1.body.data[0]._id, comic._id);
+        });
+        it("should filter by title regex", async () => {
+            const comic = await dummyComic({ publishedAt: new Date() });
+            await dummyComic({ publishedAt: new Date() });
+            const res1 = await request(app).get(`/comic/search?value=${comic.title}`).expect(200);
+            const res2 = await request(app)
+                .get(`/comic/search?value=${comic.title.slice(5, 10)}`)
+                .expect(200);
+            const res3 = await request(app).get("/comic/search").expect(200);
+            assert.equal(res1.body.data.length, 1);
+            assert.equal(res2.body.data.length, 1);
+            assert.equal(res3.body.data.length, 2);
+            assert.equal(res1.body.data[0]._id, comic._id);
+            assert.equal(res2.body.data[0]._id, comic._id);
+        });
+        it("should filter by time regex", async () => {
+            const now = new Date().getTime();
+            await dummyComic({ publishedAt: new Date(now - 366 * 24 * 60 * 60 * 1000) });
+            await dummyComic({ publishedAt: new Date(now - 32 * 24 * 60 * 60 * 1000) });
+            await dummyComic({ publishedAt: new Date(now - 8 * 24 * 60 * 60 * 1000) });
+            await dummyComic({ publishedAt: new Date(now - 25 * 60 * 60 * 1000) });
+            await dummyComic({ publishedAt: new Date() });
+            const res1 = await request(app).get("/comic/search").expect(200);
+            const res2 = await request(app).get("/comic/search?time=all").expect(200);
+            const res3 = await request(app).get("/comic/search?time=year").expect(200);
+            const res4 = await request(app).get("/comic/search?time=month").expect(200);
+            const res5 = await request(app).get("/comic/search?time=week").expect(200);
+            const res6 = await request(app).get("/comic/search?time=day").expect(200);
+            assert.equal(res1.body.data.length, 5);
+            assert.equal(res2.body.data.length, 5);
+            assert.equal(res3.body.data.length, 4);
+            assert.equal(res4.body.data.length, 3);
+            assert.equal(res5.body.data.length, 2);
+            assert.equal(res6.body.data.length, 1);
+        });
+        it("should sort results correctly", async () => {
+            for (let i = 0; i < 5; i++) await dummyComic({ publishedAt: new Date() });
+            const res = await request(app).get("/comic/search?sort=title").expect(200);
+            const data = res.body.data;
+            assert.equal(data[0].title < data[1].title, true);
+            assert.equal(data[1].title < data[2].title, true);
+            assert.equal(data[2].title < data[3].title, true);
+            assert.equal(data[3].title < data[4].title, true);
         });
     });
 });
