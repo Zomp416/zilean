@@ -348,8 +348,8 @@ describe("account routes", function () {
         });
     });
     describe("POST /account/verify", function () {
-        it("should correctly reset a password", async () => {
-            const user = await dummyUser();
+        it("should correctly verify a user", async () => {
+            const user = await dummyUser({ verified: false });
             const token = generateToken(user.db!);
             const res = await request(app)
                 .post("/account/verify")
