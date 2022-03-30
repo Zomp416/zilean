@@ -1,14 +1,18 @@
 import crypto from "crypto";
 import bcrypt from "bcrypt";
+import { Types } from "mongoose";
 
 import User, { IUser } from "../src/models/user";
+import Comic from "../src/models/comic";
+
+interface IDummyUser extends IUser {
+    password_?: string;
+}
 
 export const dummyUser = async ({
-    save = true,
     session = null,
     verified = true,
 }: {
-    save?: boolean;
     session?: any;
     verified?: boolean;
 } = {}) => {
@@ -16,12 +20,22 @@ export const dummyUser = async ({
     const email = crypto.randomBytes(20).toString("hex");
     const password = crypto.randomBytes(20).toString("hex");
     const hash = await bcrypt.hash(password, 10);
-    const login = { email, password };
-    const register = { email, password, username };
-    const db: IUser | null = save
-        ? await new User({ username, email, password: hash, verified }).save()
-        : null;
-    if (session) await session.post("/account/login").send(login);
+    const db: IDummyUser = await new User({ username, email, password: hash, verified }).save();
+    db.password_ = password;
+    if (session) await session.post("/account/login").send({ email, password });
+    return db;
+};
 
-    return { login, db, register, username, email, password, hash };
+export const dummyComic = async (
+    userid: Types.ObjectId = new Types.ObjectId(crypto.randomBytes(12))
+) => {
+    const comic = new Comic({
+        title: crypto.randomBytes(20).toString("hex"),
+        author: userid,
+    });
+    await comic.save();
+
+    await User.findByIdAndUpdate(userid, { $push: { comics: comic._id } });
+
+    return comic;
 };

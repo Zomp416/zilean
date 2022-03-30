@@ -36,24 +36,35 @@ describe("account routes", function () {
     describe("POST /account/login", function () {
         it("should succeed with correct user/password", async () => {
             const user = await dummyUser();
-            const res = await request(app).post("/account/login").send(user.login).expect(200);
-            assert.equal(res.body.message, `logged in ${user.db!._id}`);
+            const res = await request(app)
+                .post("/account/login")
+                .send({ email: user.email, password: user.password_ })
+                .expect(200);
+            assert.equal(res.body.message, `logged in ${user._id}`);
         });
         it("should fail with incorrect password", async () => {
             const user = await dummyUser();
-            user.login.password += "_";
-            const res = await request(app).post("/account/login").send(user.login).expect(401);
+            const res = await request(app)
+                .post("/account/login")
+                .send({ email: user.email, password: "_" })
+                .expect(401);
             assert.equal(res.body.error, "Invalid username or password.");
         });
         it("should fail if user does not exist", async () => {
-            const user = await dummyUser({ save: false });
-            const res = await request(app).post("/account/login").send(user.login).expect(401);
+            const res = await request(app)
+                .post("/account/login")
+                .send({ email: "_", password: "_" })
+                .expect(401);
             assert.equal(res.body.error, "User not found.");
         });
         it("should fail if mongodb connection is lost", async () => {
             const user = await dummyUser();
             await disconnect();
-            const res = await request(app).post("/account/login").send(user.login).expect(401);
+            const res = await request(app)
+                .post("/account/login")
+                .send({ email: "_", password: "_" })
+                // .send({ email: user.email, password: user.password_ })
+                .expect(401);
             await connect(mongod.getUri());
             assert.equal(res.body.error, "mongodb server connection issue");
         });
@@ -77,14 +88,14 @@ describe("account routes", function () {
     describe("GET /account/:id", function () {
         it("should retrieve information of a given user", async () => {
             const user = await dummyUser();
-            const res = await request(app).get(`/account/${user.db!._id}`).expect(200);
+            const res = await request(app).get(`/account/${user._id}`).expect(200);
             assert.equal(user.email, res.body.data.email);
             assert.equal(user.username, res.body.data.username);
         });
         it("should error if user cannot be found", async () => {
             const user = await dummyUser();
             await User.deleteMany({});
-            const res = await request(app).get(`/account/${user.db!._id}`).expect(400);
+            const res = await request(app).get(`/account/${user._id}`).expect(400);
             assert.equal(res.body.error, "No user found");
         });
     });
@@ -105,9 +116,13 @@ describe("account routes", function () {
 
     describe("POST /account/register", function () {
         it("should successfully register an unverified user", async () => {
-            const user = await dummyUser({ save: false });
+            const user = await dummyUser();
+            await User.deleteMany({});
             const session = request(app);
-            const res1 = await session.post("/account/register").send(user.register).expect(200);
+            const res1 = await session
+                .post("/account/register")
+                .send({ email: user.email, password: user.password_, username: user.username })
+                .expect(200);
             assert.equal(res1.body.message, "Registered Successfully!");
             const res2 = await session.get("/account").expect(200);
             assert.equal(res2.body.data.email, user.email);
@@ -124,15 +139,18 @@ describe("account routes", function () {
         });
         it("should fail if message body is missing information", async () => {
             const session = request(app);
-            const user1 = await dummyUser({ save: false });
-            user1.register.email = "";
-            const res1 = await session.post("/account/register").send(user1.register).expect(400);
-            const user2 = await dummyUser({ save: false });
-            user2.register.username = "";
-            const res2 = await session.post("/account/register").send(user2.register).expect(400);
-            const user3 = await dummyUser({ save: false });
-            user3.register.password = "";
-            const res3 = await session.post("/account/register").send(user3.register).expect(400);
+            const res1 = await session
+                .post("/account/register")
+                .send({ password: "_", username: "_" })
+                .expect(400);
+            const res2 = await session
+                .post("/account/register")
+                .send({ email: "_", username: "_" })
+                .expect(400);
+            const res3 = await session
+                .post("/account/register")
+                .send({ email: "_", password: "_" })
+                .expect(400);
             assert.equal(res1.body.error, "Missing arguments in request");
             assert.equal(res2.body.error, "Missing arguments in request");
             assert.equal(res3.body.error, "Missing arguments in request");
@@ -140,15 +158,13 @@ describe("account routes", function () {
         });
         it("should fail if username or email are already taken", async () => {
             const user = await dummyUser();
-            user.register.email = user.register.email.toLowerCase();
             const res1 = await request(app)
                 .post("/account/register")
-                .send(user.register)
+                .send({ username: "_", email: user.email, password: "_" })
                 .expect(400);
-            user.register.email = user.register.email.toLowerCase();
             const res2 = await request(app)
                 .post("/account/register")
-                .send(user.register)
+                .send({ username: user.username, email: "_", password: "_" })
                 .expect(400);
             assert.equal(
                 res1.body.error,
@@ -171,7 +187,7 @@ describe("account routes", function () {
                 .send({ user: { username: "_" } })
                 .expect(200);
             assert.equal(res.body.data.username, "_");
-            assert.equal(res.body.data._id, user.db!._id);
+            assert.equal(res.body.data._id, user._id);
             assert.equal((await User.findOne({}).exec())!.username, "_");
         });
         it("should fail if request body is missing information", async () => {
@@ -198,28 +214,24 @@ describe("account routes", function () {
             const user2 = await dummyUser();
             const res = await session
                 .post("/account/subscribe")
-                .send({ subscription: user2.db!._id })
+                .send({ subscription: user2._id })
                 .expect(200);
             assert.equal(res.body.message, "subscribed successfully");
-            assert.equal((await User.findById(user2.db!._id).exec())!.subscriberCount, 1);
-            assert.deepEqual((await User.findById(user1.db!._id).exec())!.subscriptions, [
-                user2.db!._id,
-            ]);
+            assert.equal((await User.findById(user2._id).exec())!.subscriberCount, 1);
+            assert.deepEqual((await User.findById(user1._id).exec())!.subscriptions, [user2._id]);
         });
         it("should fail to subscribe to the same user twice", async () => {
             const session = request(app);
             const user1 = await dummyUser({ session });
             const user2 = await dummyUser();
-            await session.post("/account/subscribe").send({ subscription: user2.db!._id });
+            await session.post("/account/subscribe").send({ subscription: user2._id });
             const res = await session
                 .post("/account/subscribe")
-                .send({ subscription: user2.db!._id })
+                .send({ subscription: user2._id })
                 .expect(400);
             assert.equal(res.body.error, "already subscribed");
-            assert.equal((await User.findById(user2.db!._id).exec())!.subscriberCount, 1);
-            assert.deepEqual((await User.findById(user1.db!._id).exec())!.subscriptions, [
-                user2.db!._id,
-            ]);
+            assert.equal((await User.findById(user2._id).exec())!.subscriberCount, 1);
+            assert.deepEqual((await User.findById(user1._id).exec())!.subscriptions, [user2._id]);
         });
     });
     describe("POST /account/unsubscribe", function () {
@@ -227,14 +239,14 @@ describe("account routes", function () {
             const session = request(app);
             const user1 = await dummyUser({ session });
             const user2 = await dummyUser();
-            await session.post("/account/subscribe").send({ subscription: user2.db!._id });
+            await session.post("/account/subscribe").send({ subscription: user2._id });
             const res = await session
                 .post("/account/unsubscribe")
-                .send({ subscription: user2.db!._id })
+                .send({ subscription: user2._id })
                 .expect(200);
             assert.equal(res.body.message, "unsubscribed successfully");
-            assert.equal((await User.findById(user2.db!._id).exec())!.subscriberCount, 0);
-            assert.deepEqual((await User.findById(user1.db!._id).exec())!.subscriptions, []);
+            assert.equal((await User.findById(user2._id).exec())!.subscriberCount, 0);
+            assert.deepEqual((await User.findById(user1._id).exec())!.subscriptions, []);
         });
         it("should fail to remove a subscription that doesn't exist", async () => {
             const session = request(app);
@@ -242,11 +254,11 @@ describe("account routes", function () {
             const user2 = await dummyUser();
             const res = await session
                 .post("/account/unsubscribe")
-                .send({ subscription: user2.db!._id })
+                .send({ subscription: user2._id })
                 .expect(400);
             assert.equal(res.body.error, "not subscribed");
-            assert.equal((await User.findById(user2.db!._id).exec())!.subscriberCount, 0);
-            assert.deepEqual((await User.findById(user1.db!._id).exec())!.subscriptions, []);
+            assert.equal((await User.findById(user2._id).exec())!.subscriberCount, 0);
+            assert.deepEqual((await User.findById(user1._id).exec())!.subscriptions, []);
         });
     });
     describe("POST /account/forgot-password", function () {
@@ -275,27 +287,29 @@ describe("account routes", function () {
     describe("POST /account/reset-password", function () {
         it("should correctly reset a password", async () => {
             const user = await dummyUser();
-            const token = generateToken(user.db!);
+            const token = generateToken(user);
             const password = "_";
             const res = await request(app)
                 .post("/account/reset-password")
-                .send({ id: user.db!._id, token, password })
+                .send({ id: user._id, token, password })
                 .expect(200);
-            user.login.password = password;
-            await request(app).post("/account/login").send(user.login).expect(200);
+            await request(app)
+                .post("/account/login")
+                .send({ email: user.email, password: "_" })
+                .expect(200);
             assert.equal(res.body.message, "OK");
         });
         it("should fail if message body is missing information", async () => {
             const user = await dummyUser();
-            const token = generateToken(user.db!);
+            const token = generateToken(user);
             const password = "_";
             const res1 = await request(app)
                 .post("/account/reset-password")
-                .send({ id: user.db!._id, token })
+                .send({ id: user._id, token })
                 .expect(400);
             const res2 = await request(app)
                 .post("/account/reset-password")
-                .send({ id: user.db!._id, password })
+                .send({ id: user._id, password })
                 .expect(400);
             const res3 = await request(app)
                 .post("/account/reset-password")
@@ -307,12 +321,12 @@ describe("account routes", function () {
         });
         it("should fail if user does not exist", async () => {
             const user = await dummyUser();
-            const token = generateToken(user.db!);
+            const token = generateToken(user);
             const password = "_";
             await User.deleteMany({});
             const res = await request(app)
                 .post("/account/reset-password")
-                .send({ id: user.db!._id, token, password })
+                .send({ id: user._id, token, password })
                 .expect(400);
             assert.equal(res.body.error, "User not found");
         });
@@ -322,7 +336,7 @@ describe("account routes", function () {
             const password = "_";
             const res = await request(app)
                 .post("/account/reset-password")
-                .send({ id: user.db!._id, token, password })
+                .send({ id: user._id, token, password })
                 .expect(400);
             assert.equal(res.body.error, "Token is invalid or expired");
         });
@@ -350,20 +364,20 @@ describe("account routes", function () {
     describe("POST /account/verify", function () {
         it("should correctly verify a user", async () => {
             const user = await dummyUser({ verified: false });
-            const token = generateToken(user.db!);
+            const token = generateToken(user);
             const res = await request(app)
                 .post("/account/verify")
-                .send({ id: user.db!._id, token })
+                .send({ id: user._id, token })
                 .expect(200);
             assert.equal(await User.countDocuments({ verified: true }), 1);
             assert.equal(res.body.message, "OK");
         });
         it("should fail if message body is missing information", async () => {
             const user = await dummyUser();
-            const token = generateToken(user.db!);
+            const token = generateToken(user);
             const res1 = await request(app)
                 .post("/account/verify")
-                .send({ id: user.db!._id })
+                .send({ id: user._id })
                 .expect(400);
             const res2 = await request(app).post("/account/verify").send({ token }).expect(400);
             assert.equal(res1.body.error, "Must provide all required arguments to verify user");
@@ -371,11 +385,11 @@ describe("account routes", function () {
         });
         it("should fail if user does not exist", async () => {
             const user = await dummyUser();
-            const token = generateToken(user.db!);
+            const token = generateToken(user);
             await User.deleteMany({});
             const res = await request(app)
                 .post("/account/verify")
-                .send({ id: user.db!._id, token })
+                .send({ id: user._id, token })
                 .expect(400);
             assert.equal(res.body.error, "User not found");
         });
@@ -384,7 +398,7 @@ describe("account routes", function () {
             const token = "_";
             const res = await request(app)
                 .post("/account/verify")
-                .send({ id: user.db!._id, token })
+                .send({ id: user._id, token })
                 .expect(400);
             assert.equal(res.body.error, "Token is invalid or expired");
         });
@@ -412,7 +426,7 @@ describe("account routes", function () {
             const session = request(app);
             await dummyUser({ session });
             const user = await dummyUser();
-            await session.post("/account/subscribe").send({ subscription: user.db!._id });
+            await session.post("/account/subscribe").send({ subscription: user._id });
             const res1 = await session.get("/account/search?subscriptions=true").expect(200);
             const res2 = await session.get("/account/search").expect(200);
             assert.equal(res1.body.data.length, 1);
