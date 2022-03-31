@@ -49,7 +49,6 @@ const storySchema = new Schema<IStory>(
         },
         story: {
             type: String,
-            required: true,
         },
         author: {
             type: Schema.Types.ObjectId,
