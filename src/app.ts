@@ -8,6 +8,7 @@ import passport from "./util/passport-config";
 import accountRouter from "./routes/account";
 import comicRouter from "./routes/comic";
 import imageRouter from "./routes/image";
+import storyRouter from "./routes/story";
 
 const createApp = (mongo_uri: string, session_secret: string) => {
     const app = express();
@@ -42,6 +43,7 @@ const createApp = (mongo_uri: string, session_secret: string) => {
     app.use("/account", accountRouter);
     app.use("/comic", comicRouter);
     app.use("/image", imageRouter);
+    app.use("/story", storyRouter);
 
     app.get("/", (req, res) => {
         res.send("Hello world!");
