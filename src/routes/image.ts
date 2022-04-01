@@ -58,7 +58,7 @@ router.get("/search", async (req, res, next) => {
     if (req.query.value) {
         const nameFilter = req.query.value as string;
         queryFilters.push({
-            title: {
+            name: {
                 $regex: new RegExp(nameFilter, "i"),
             },
         });
@@ -78,7 +78,7 @@ router.get("/search", async (req, res, next) => {
             timeBoundary = new Date(timeBoundary.getMilliseconds() - 60 * 60 * 24 * 1000);
         }
         queryFilters.push({
-            publishedAt: {
+            updatedAt: {
                 $gte: timeBoundary,
             },
         });

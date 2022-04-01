@@ -6,7 +6,7 @@ import { Express } from "express";
 
 const request = require("supertest-session");
 
-import { dummyUser } from "../dummy";
+import { dummyImage, dummyUser } from "../dummy";
 import Image from "../../src/models/image";
 import createApp from "../../src/app";
 import * as s3 from "../../src/util/s3-config";
@@ -175,6 +175,77 @@ describe("account routes", function () {
             assert.equal(res.body.error, "NOT LOGGED IN");
             assert.equal(uploadObjectStub.callCount, 0);
             assert.equal(await Image.countDocuments(), 0);
+        });
+    });
+
+    describe("GET /image/search", function () {
+        it("should find all images (empty search)", async () => {
+            for (let i = 0; i < 5; i++) await dummyImage();
+            const res = await request(app).get("/image/search").expect(200);
+            assert.equal(res.body.data.length, 5);
+        });
+        it("should filter by subscriptions", async () => {
+            const user = await dummyUser();
+            const image = await dummyImage({ userid: user._id });
+            await dummyImage();
+            const session = request(app);
+            await dummyUser({ session });
+            await session.post("/account/subscribe").send({ subscription: user._id });
+            const res1 = await session.get("/image/search?subscriptions=true").expect(200);
+            const res2 = await session.get("/image/search").expect(200);
+            assert.equal(res1.body.data.length, 1);
+            assert.equal(res2.body.data.length, 2);
+            assert.equal(res1.body.data[0]._id, image._id);
+        });
+        it("should fail subscription filter when unauthenticated", async () => {
+            const res = await request(app).get("/image/search?subscriptions=true").expect(400);
+            assert.equal(res.body.error, "Must be logged in to show subscriptions");
+        });
+        it("should filter by author", async () => {
+            const user = await dummyUser();
+            const image = await dummyImage({ userid: user._id });
+            await dummyImage();
+            const res1 = await request(app).get(`/image/search?author=${user._id}`).expect(200);
+            const res2 = await request(app).get("/image/search").expect(200);
+            assert.equal(res1.body.data.length, 1);
+            assert.equal(res2.body.data.length, 2);
+            assert.equal(res1.body.data[0]._id, image._id);
+        });
+        it("should filter by title regex", async () => {
+            const image = await dummyImage();
+            await dummyImage();
+            const res1 = await request(app).get(`/image/search?value=${image.name}`).expect(200);
+            const res2 = await request(app)
+                .get(`/image/search?value=${image.name.slice(5, 10)}`)
+                .expect(200);
+            const res3 = await request(app).get("/image/search").expect(200);
+            assert.equal(res1.body.data.length, 1);
+            assert.equal(res2.body.data.length, 1);
+            assert.equal(res3.body.data.length, 2);
+            assert.equal(res1.body.data[0]._id, image._id);
+            assert.equal(res2.body.data[0]._id, image._id);
+        });
+        it("should filter by time regex", async () => {
+            await dummyImage();
+            const res1 = await request(app).get("/image/search?time=all").expect(200);
+            const res2 = await request(app).get("/image/search?time=year").expect(200);
+            const res3 = await request(app).get("/image/search?time=month").expect(200);
+            const res4 = await request(app).get("/image/search?time=week").expect(200);
+            const res5 = await request(app).get("/image/search?time=day").expect(200);
+            assert.equal(res1.body.data.length, 1);
+            assert.equal(res2.body.data.length, 1);
+            assert.equal(res3.body.data.length, 1);
+            assert.equal(res4.body.data.length, 1);
+            assert.equal(res5.body.data.length, 1);
+        });
+        it("should sort results correctly", async () => {
+            for (let i = 0; i < 5; i++) await dummyImage();
+            const res = await request(app).get("/image/search?sort=name").expect(200);
+            const data = res.body.data;
+            assert.equal(data[0].name < data[1].name, true);
+            assert.equal(data[1].name < data[2].name, true);
+            assert.equal(data[2].name < data[3].name, true);
+            assert.equal(data[3].name < data[4].name, true);
         });
     });
 });
