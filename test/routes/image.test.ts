@@ -32,6 +32,20 @@ describe("account routes", function () {
         await mongod.stop();
     });
 
+    describe("GET /image/:id", function () {
+        it("should retrieve a image", async () => {
+            const image = await dummyImage();
+            const res = await request(app).get(`/image/${image._id}`).expect(200);
+            assert.equal(res.body.data.imageURL, image.imageURL);
+        });
+        it("should error if id is invalid", async () => {
+            const image = await dummyImage();
+            await Image.deleteMany({});
+            const res = await request(app).get(`/image/${image._id}`).expect(400);
+            assert.equal(res.body.error, "No image found");
+        });
+    });
+
     describe("POST /image", function () {
         it("should upload an image (asset)", async () => {
             const session = request(app);
@@ -178,6 +192,94 @@ describe("account routes", function () {
         });
     });
 
+    describe("PUT /image/:id", function () {
+        it("should update an image", async () => {
+            const session = request(app);
+            const user = await dummyUser({ session });
+            const image = await dummyImage({ userid: user._id });
+            const res = await session
+                .put(`/image/${image._id}`)
+                .send({ image: { name: "_" } })
+                .expect(200);
+            assert.equal(res.body.data.name, "_");
+            assert.equal(res.body.data._id, image._id);
+            assert.equal((await Image.findOne({}).exec())!.name, "_");
+        });
+        it("should fail if image does not exist", async () => {
+            const session = request(app);
+            await dummyUser({ session });
+            const image = await dummyImage();
+            await Image.deleteMany({});
+            const res = await session.put(`/image/${image._id}`).expect(400);
+            assert.equal(res.body.error, "No image found");
+        });
+        it("should fail if user is unverified", async () => {
+            const session = request(app);
+            const user = await dummyUser({ session, verified: false });
+            const image = await dummyImage({ userid: user._id });
+            const res = await session.put(`/image/${image._id}`).expect(401);
+            assert.equal(res.body.error, "Must be verified to update an image.");
+        });
+        it("should fail if user is not the author", async () => {
+            const session = request(app);
+            await dummyUser({ session });
+            const image = await dummyImage();
+            const res = await session.put(`/image/${image._id}`).expect(401);
+            assert.equal(res.body.error, "Must be the author to update image.");
+        });
+        it("should fail if user is not logged in", async () => {
+            const image = await dummyImage();
+            const res = await request(app).put(`/image/${image._id}`).expect(401);
+            assert.equal(res.body.error, "NOT LOGGED IN");
+        });
+    });
+
+    describe("DEL /image/:id", function () {
+        it("should delete an image", async () => {
+            const session = request(app);
+            const user = await dummyUser({ session });
+            const image = await dummyImage({ userid: user._id });
+            const res = await session.delete(`/image/${image._id}`).expect(200);
+            assert.equal(res.body.message, "Successfully deleted image.");
+            assert.equal(deleteObjectStub.callCount, 1);
+            assert.equal(await Image.countDocuments(), 0);
+        });
+        it("should fail if image does not exist", async () => {
+            const session = request(app);
+            await dummyUser({ session });
+            const image = await dummyImage();
+            await Image.deleteMany({});
+            const res = await session.delete(`/image/${image._id}`).expect(400);
+            assert.equal(res.body.error, "No image found");
+            assert.equal(deleteObjectStub.callCount, 0);
+        });
+        it("should fail if user is unverified", async () => {
+            const session = request(app);
+            const user = await dummyUser({ session, verified: false });
+            const image = await dummyImage({ userid: user._id });
+            const res = await session.delete(`/image/${image._id}`).expect(401);
+            assert.equal(res.body.error, "Must be verified to delete an image.");
+            assert.equal(deleteObjectStub.callCount, 0);
+            assert.equal(await Image.countDocuments(), 1);
+        });
+        it("should fail if user is not the author", async () => {
+            const session = request(app);
+            await dummyUser({ session });
+            const image = await dummyImage();
+            const res = await session.delete(`/image/${image._id}`).expect(401);
+            assert.equal(res.body.error, "Must be the author to delete image.");
+            assert.equal(deleteObjectStub.callCount, 0);
+            assert.equal(await Image.countDocuments(), 1);
+        });
+        it("should fail if user is not logged in", async () => {
+            const image = await dummyImage();
+            const res = await request(app).put(`/image/${image._id}`).expect(401);
+            assert.equal(res.body.error, "NOT LOGGED IN");
+            assert.equal(deleteObjectStub.callCount, 0);
+            assert.equal(await Image.countDocuments(), 1);
+        });
+    });
+
     describe("GET /image/search", function () {
         it("should find all images (empty search)", async () => {
             for (let i = 0; i < 5; i++) await dummyImage();
@@ -211,7 +313,7 @@ describe("account routes", function () {
             assert.equal(res2.body.data.length, 2);
             assert.equal(res1.body.data[0]._id, image._id);
         });
-        it("should filter by title regex", async () => {
+        it("should filter by name regex", async () => {
             const image = await dummyImage();
             await dummyImage();
             const res1 = await request(app).get(`/image/search?value=${image.name}`).expect(200);

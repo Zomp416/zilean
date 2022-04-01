@@ -186,10 +186,10 @@ router.post("/", isAuthenticated, upload, async (req, res, next) => {
     return next();
 });
 
-// UPDATE COMIC - AUTH
+// UPDATE IMAGE - AUTH
 router.put("/:id", isAuthenticated, async (req, res, next) => {
     const user = req.user as IUser;
-    const image = await Image.findById(req.params.id);
+    let image = await Image.findById(req.params.id);
 
     if (!image) {
         res.status(400).json({ error: "No image found" });
@@ -201,7 +201,7 @@ router.put("/:id", isAuthenticated, async (req, res, next) => {
         return next();
     }
 
-    if (image.uploadedBy !== user._id) {
+    if (image.uploadedBy?.toString() !== user._id.toString()) {
         res.status(401).json({ error: "Must be the author to update image." });
         return next();
     }
@@ -209,7 +209,7 @@ router.put("/:id", isAuthenticated, async (req, res, next) => {
     // TODO assert that req.body.image is actually an image document
     // TODO check if imageURL is being changed, we prob shouldn't let that happen
     const updatedImage = req.body.image as IImage;
-    await image.update(updatedImage);
+    image = await Image.findByIdAndUpdate(image._id, updatedImage, { returnDocument: "after" });
 
     res.status(200).json({ data: image });
     return next();
@@ -230,7 +230,7 @@ router.delete("/:id", isAuthenticated, async (req, res, next) => {
         return next();
     }
 
-    if (image.uploadedBy !== user._id) {
+    if (image.uploadedBy?.toString() !== user._id.toString()) {
         res.status(401).json({ error: "Must be the author to delete image." });
         return next();
     }
