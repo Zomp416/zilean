@@ -2,6 +2,7 @@ import express from "express";
 import { isAuthenticated } from "../util/passport-config";
 import { uploadObject, deleteObject } from "../util/s3-config";
 import Image, { IImage } from "../models/image";
+import { Request, Response, NextFunction } from "express";
 import User, { IUser } from "../models/user";
 import multer from "multer";
 import { v4 } from "uuid";
@@ -9,10 +10,16 @@ import { default as isSvg } from "is-svg";
 import fileType from "file-type";
 
 const router = express.Router();
-const upload = multer();
 
 const ALLOWED_FILE_TYPES = ["jpg", "jpeg", "png", "svg"];
 const DIRECTORY_NAMES = ["assets", "thumbnails", "avatars"];
+
+const upload = (req: Request, res: Response, next: NextFunction) => {
+    multer().single("image")(req, res, err => {
+        if (err) res.status(400).json({ error: "multer upload error" });
+        else return next();
+    });
+};
 
 // SEARCH IMAGES
 router.get("/search", async (req, res, next) => {
@@ -125,7 +132,7 @@ router.get("/:id", async (req, res, next) => {
 });
 
 // UPLOAD IMAGE - AUTH
-router.post("/", isAuthenticated, upload.single("image"), async (req, res, next) => {
+router.post("/", isAuthenticated, upload, async (req, res, next) => {
     const user = req.user as IUser;
     if (!user.verified) {
         res.status(401).json({ error: "Must be verified to upload an image." });
@@ -168,7 +175,7 @@ router.post("/", isAuthenticated, upload.single("image"), async (req, res, next)
         name,
         searchable,
         imageURL: filePath,
-        author: user._id,
+        uploadedBy: user._id,
     });
 
     // TODO handle error case
