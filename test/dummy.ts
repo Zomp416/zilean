@@ -4,6 +4,7 @@ import { Types } from "mongoose";
 
 import User, { IUser } from "../src/models/user";
 import Comic from "../src/models/comic";
+import Story from "../src/models/story";
 
 interface IDummyUser extends IUser {
     password_?: string;
@@ -43,4 +44,23 @@ export const dummyComic = async ({
     await User.findByIdAndUpdate(userid, { $push: { comics: comic._id } });
 
     return comic;
+};
+
+export const dummyStory = async ({
+    userid = new Types.ObjectId(crypto.randomBytes(12)),
+    publishedAt = undefined,
+}: {
+    userid?: Types.ObjectId;
+    publishedAt?: Date;
+} = {}) => {
+    const story = new Story({
+        title: crypto.randomBytes(20).toString("hex"),
+        author: userid,
+        publishedAt,
+    });
+    await story.save();
+
+    await User.findByIdAndUpdate(userid, { $push: { stories: story._id } });
+
+    return story;
 };
