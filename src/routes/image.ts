@@ -2,6 +2,7 @@ import express from "express";
 import { isAuthenticated } from "../util/passport-config";
 import { uploadObject, deleteObject } from "../util/s3-config";
 import Image, { IImage } from "../models/image";
+import { Request, Response, NextFunction } from "express";
 import User, { IUser } from "../models/user";
 import multer from "multer";
 import { v4 } from "uuid";
@@ -9,10 +10,16 @@ import { default as isSvg } from "is-svg";
 import fileType from "file-type";
 
 const router = express.Router();
-const upload = multer();
 
 const ALLOWED_FILE_TYPES = ["jpg", "jpeg", "png", "svg"];
 const DIRECTORY_NAMES = ["assets", "thumbnails", "avatars"];
+
+const upload = (req: Request, res: Response, next: NextFunction) => {
+    multer().single("image")(req, res, err => {
+        if (err) res.status(400).json({ error: "multer upload error" });
+        else return next();
+    });
+};
 
 // SEARCH IMAGES
 router.get("/search", async (req, res, next) => {
@@ -51,7 +58,7 @@ router.get("/search", async (req, res, next) => {
     if (req.query.value) {
         const nameFilter = req.query.value as string;
         queryFilters.push({
-            title: {
+            name: {
                 $regex: new RegExp(nameFilter, "i"),
             },
         });
@@ -71,7 +78,7 @@ router.get("/search", async (req, res, next) => {
             timeBoundary = new Date(timeBoundary.getMilliseconds() - 60 * 60 * 24 * 1000);
         }
         queryFilters.push({
-            publishedAt: {
+            updatedAt: {
                 $gte: timeBoundary,
             },
         });
@@ -125,7 +132,7 @@ router.get("/:id", async (req, res, next) => {
 });
 
 // UPLOAD IMAGE - AUTH
-router.post("/", isAuthenticated, upload.single("image"), async (req, res, next) => {
+router.post("/", isAuthenticated, upload, async (req, res, next) => {
     const user = req.user as IUser;
     if (!user.verified) {
         res.status(401).json({ error: "Must be verified to upload an image." });
@@ -168,7 +175,7 @@ router.post("/", isAuthenticated, upload.single("image"), async (req, res, next)
         name,
         searchable,
         imageURL: filePath,
-        author: user._id,
+        uploadedBy: user._id,
     });
 
     // TODO handle error case
@@ -179,10 +186,10 @@ router.post("/", isAuthenticated, upload.single("image"), async (req, res, next)
     return next();
 });
 
-// UPDATE COMIC - AUTH
+// UPDATE IMAGE - AUTH
 router.put("/:id", isAuthenticated, async (req, res, next) => {
     const user = req.user as IUser;
-    const image = await Image.findById(req.params.id);
+    let image = await Image.findById(req.params.id);
 
     if (!image) {
         res.status(400).json({ error: "No image found" });
@@ -194,7 +201,7 @@ router.put("/:id", isAuthenticated, async (req, res, next) => {
         return next();
     }
 
-    if (image.uploadedBy !== user._id) {
+    if (image.uploadedBy?.toString() !== user._id.toString()) {
         res.status(401).json({ error: "Must be the author to update image." });
         return next();
     }
@@ -202,7 +209,7 @@ router.put("/:id", isAuthenticated, async (req, res, next) => {
     // TODO assert that req.body.image is actually an image document
     // TODO check if imageURL is being changed, we prob shouldn't let that happen
     const updatedImage = req.body.image as IImage;
-    await image.update(updatedImage);
+    image = await Image.findByIdAndUpdate(image._id, updatedImage, { returnDocument: "after" });
 
     res.status(200).json({ data: image });
     return next();
@@ -223,7 +230,7 @@ router.delete("/:id", isAuthenticated, async (req, res, next) => {
         return next();
     }
 
-    if (image.uploadedBy !== user._id) {
+    if (image.uploadedBy?.toString() !== user._id.toString()) {
         res.status(401).json({ error: "Must be the author to delete image." });
         return next();
     }

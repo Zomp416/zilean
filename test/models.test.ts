@@ -214,15 +214,5 @@ describe("basic document operations", function () {
                 await story.save();
             });
         });
-        // required story
-        it("should fail without story", async () => {
-            await assert.rejects(async () => {
-                let story: IStory = new Story({
-                    title: "Example Title",
-                    author: new Types.ObjectId(),
-                });
-                await story.save();
-            });
-        });
     });
 });
