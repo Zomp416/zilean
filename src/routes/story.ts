@@ -155,4 +155,38 @@ router.delete("/:id", isAuthenticated, isVerified, findStory, isAuthor, async (r
     return next();
 });
 
+// PUBLISH STORY
+router.put(
+    "/publish/:id",
+    isAuthenticated,
+    isVerified,
+    findStory,
+    isAuthor,
+    async (req, res, next) => {
+        let comic = req.payload as IStory;
+
+        await Story.findByIdAndUpdate(comic._id, { publishedAt: new Date() });
+
+        res.status(200).json({ message: "successfully published" });
+        return next();
+    }
+);
+
+// UNPUBLISH STORY
+router.put(
+    "/unpublish/:id",
+    isAuthenticated,
+    isVerified,
+    findStory,
+    isAuthor,
+    async (req, res, next) => {
+        let comic = req.payload as IStory;
+
+        await Story.findByIdAndUpdate(comic._id, { publishedAt: null });
+
+        res.status(200).json({ message: "successfully unpublished" });
+        return next();
+    }
+);
+
 export default router;
