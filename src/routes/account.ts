@@ -1,6 +1,7 @@
 import express from "express";
 import bcrypt from "bcrypt";
-import passport, { isAuthenticated } from "../util/passport-config";
+import passport from "../util/passport-config";
+import { isAuthenticated } from "../util/middlewares";
 import { sendForgotPasswordEmail, sendVerifyEmail } from "../util/email-config";
 import { verifyToken } from "../util/token-config";
 import User, { IUser } from "../models/user";

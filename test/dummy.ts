@@ -76,7 +76,7 @@ export const dummyImage = async ({
     const image = new Image({
         name: crypto.randomBytes(20).toString("hex"),
         imageURL: crypto.randomBytes(20).toString("hex"),
-        uploadedBy: userid,
+        author: userid,
         searchable,
     });
     await image.save();

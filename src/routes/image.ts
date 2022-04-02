@@ -1,9 +1,9 @@
 import express from "express";
-import { isAuthenticated } from "../util/passport-config";
+import { isAuthenticated, isVerified, findImage, isAuthor } from "../util/middlewares";
 import { uploadObject, deleteObject } from "../util/s3-config";
 import Image, { IImage } from "../models/image";
 import { Request, Response, NextFunction } from "express";
-import User, { IUser } from "../models/user";
+import { IUser } from "../models/user";
 import multer from "multer";
 import { v4 } from "uuid";
 import { default as isSvg } from "is-svg";
@@ -40,7 +40,7 @@ router.get("/search", async (req, res, next) => {
         }
         const user = req.user as IUser;
         queryFilters.push({
-            uploadedBy: {
+            author: {
                 $in: user.subscriptions,
             },
         });
@@ -50,7 +50,7 @@ router.get("/search", async (req, res, next) => {
     if (req.query.author) {
         const userFilter = req.query.author as string;
         queryFilters.push({
-            uploadedBy: userFilter,
+            author: userFilter,
         });
     }
 
@@ -121,23 +121,14 @@ router.get("/search", async (req, res, next) => {
 });
 
 // GET IMAGE
-router.get("/:id", async (req, res, next) => {
-    const image = await Image.findById(req.params.id);
-    if (!image) {
-        res.status(400).json({ error: "No image found" });
-        return next();
-    }
-    res.status(200).json({ data: image });
+router.get("/:id", findImage, async (req, res, next) => {
+    res.status(200).json({ data: req.payload });
     return next();
 });
 
 // UPLOAD IMAGE - AUTH
-router.post("/", isAuthenticated, upload, async (req, res, next) => {
+router.post("/", isAuthenticated, isVerified, upload, async (req, res, next) => {
     const user = req.user as IUser;
-    if (!user.verified) {
-        res.status(401).json({ error: "Must be verified to upload an image." });
-        return next();
-    }
 
     const file = req.file;
     if (!file) {
@@ -175,7 +166,7 @@ router.post("/", isAuthenticated, upload, async (req, res, next) => {
         name,
         searchable,
         imageURL: filePath,
-        uploadedBy: user._id,
+        author: user._id,
     });
 
     // TODO handle error case
@@ -187,24 +178,9 @@ router.post("/", isAuthenticated, upload, async (req, res, next) => {
 });
 
 // UPDATE IMAGE - AUTH
-router.put("/:id", isAuthenticated, async (req, res, next) => {
+router.put("/:id", isAuthenticated, isVerified, findImage, isAuthor, async (req, res, next) => {
     const user = req.user as IUser;
-    let image = await Image.findById(req.params.id);
-
-    if (!image) {
-        res.status(400).json({ error: "No image found" });
-        return next();
-    }
-
-    if (!user.verified) {
-        res.status(401).json({ error: "Must be verified to update an image." });
-        return next();
-    }
-
-    if (image.uploadedBy?.toString() !== user._id.toString()) {
-        res.status(401).json({ error: "Must be the author to update image." });
-        return next();
-    }
+    let image: IImage | null = req.payload as IImage;
 
     // TODO assert that req.body.image is actually an image document
     // TODO check if imageURL is being changed, we prob shouldn't let that happen
@@ -216,25 +192,8 @@ router.put("/:id", isAuthenticated, async (req, res, next) => {
 });
 
 // DELETE IMAGE - AUTH
-router.delete("/:id", isAuthenticated, async (req, res, next) => {
-    const user = req.user as IUser;
-    const image = await Image.findById(req.params.id);
-
-    if (!image) {
-        res.status(400).json({ error: "No image found" });
-        return next();
-    }
-
-    if (!user.verified) {
-        res.status(401).json({ error: "Must be verified to delete an image." });
-        return next();
-    }
-
-    if (image.uploadedBy?.toString() !== user._id.toString()) {
-        res.status(401).json({ error: "Must be the author to delete image." });
-        return next();
-    }
-
+router.delete("/:id", isAuthenticated, isVerified, findImage, isAuthor, async (req, res, next) => {
+    const image = req.payload as IImage;
     await image.delete();
     await deleteObject(image.imageURL);
 

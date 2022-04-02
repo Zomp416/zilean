@@ -36,7 +36,7 @@ describe("comic routes", function () {
             const comic = await dummyComic();
             await Comic.deleteMany({});
             const res = await request(app).get(`/comic/${comic._id}`).expect(400);
-            assert.equal(res.body.error, "No comic found");
+            assert.equal(res.body.error, "no comic found with given id");
         });
     });
 
@@ -54,12 +54,12 @@ describe("comic routes", function () {
             const session = request(app);
             await dummyUser({ session, verified: false });
             const res = await session.post("/comic").expect(401);
-            assert.equal(res.body.error, "Must be verified to create a comic.");
+            assert.equal(res.body.error, "must be verified to perform requested action");
             assert.equal(await Comic.countDocuments(), 0);
         });
         it("should fail if user is not logged in", async () => {
             const res = await request(app).post("/comic").expect(401);
-            assert.equal(res.body.error, "NOT LOGGED IN");
+            assert.equal(res.body.error, "not logged in");
             assert.equal(await Comic.countDocuments(), 0);
         });
     });
@@ -83,26 +83,26 @@ describe("comic routes", function () {
             const comic = await dummyComic();
             await Comic.deleteMany({});
             const res = await session.put(`/comic/${comic._id}`).expect(400);
-            assert.equal(res.body.error, "No comic found");
+            assert.equal(res.body.error, "no comic found with given id");
         });
         it("should fail if user is unverified", async () => {
             const session = request(app);
             const user = await dummyUser({ session, verified: false });
             const comic = await dummyComic({ userid: user._id });
             const res = await session.put(`/comic/${comic._id}`).expect(401);
-            assert.equal(res.body.error, "Must be verified to update a comic.");
+            assert.equal(res.body.error, "must be verified to perform requested action");
         });
         it("should fail if user is not the author", async () => {
             const session = request(app);
             await dummyUser({ session });
             const comic = await dummyComic();
             const res = await session.put(`/comic/${comic._id}`).expect(401);
-            assert.equal(res.body.error, "Must be the author to update comic.");
+            assert.equal(res.body.error, "must be the author to modify the selected resource");
         });
         it("should fail if user is not logged in", async () => {
             const comic = await dummyComic();
             const res = await request(app).put(`/comic/${comic._id}`).expect(401);
-            assert.equal(res.body.error, "NOT LOGGED IN");
+            assert.equal(res.body.error, "not logged in");
         });
     });
 
@@ -122,14 +122,14 @@ describe("comic routes", function () {
             const comic = await dummyComic();
             await Comic.deleteMany({});
             const res = await session.delete(`/comic/${comic._id}`).expect(400);
-            assert.equal(res.body.error, "No comic found");
+            assert.equal(res.body.error, "no comic found with given id");
         });
         it("should fail if user is unverified", async () => {
             const session = request(app);
             const user = await dummyUser({ session, verified: false });
             const comic = await dummyComic({ userid: user._id });
             const res = await session.delete(`/comic/${comic._id}`).expect(401);
-            assert.equal(res.body.error, "Must be verified to delete a comic.");
+            assert.equal(res.body.error, "must be verified to perform requested action");
             assert.equal(await Comic.countDocuments(), 1);
         });
         it("should fail if user is not the author", async () => {
@@ -137,13 +137,13 @@ describe("comic routes", function () {
             await dummyUser({ session });
             const comic = await dummyComic();
             const res = await session.delete(`/comic/${comic._id}`).expect(401);
-            assert.equal(res.body.error, "Must be the author to delete comic.");
+            assert.equal(res.body.error, "must be the author to modify the selected resource");
             assert.equal(await Comic.countDocuments(), 1);
         });
         it("should fail if user is not logged in", async () => {
             const comic = await dummyComic();
             const res = await request(app).put(`/comic/${comic._id}`).expect(401);
-            assert.equal(res.body.error, "NOT LOGGED IN");
+            assert.equal(res.body.error, "not logged in");
             assert.equal(await Comic.countDocuments(), 1);
         });
     });
@@ -223,6 +223,96 @@ describe("comic routes", function () {
             assert.equal(data[1].title < data[2].title, true);
             assert.equal(data[2].title < data[3].title, true);
             assert.equal(data[3].title < data[4].title, true);
+        });
+    });
+    describe("PUT /comic/publish/:id", function () {
+        it("should publish a comic", async () => {
+            const session = request(app);
+            const user = await dummyUser({ session });
+            const comic = await dummyComic({ userid: user._id });
+            const res = await session.put(`/comic/publish/${comic._id}`).expect(200);
+            assert.equal(res.body.message, "successfully published");
+            assert.notEqual((await Comic.findOne({}).exec())!.publishedAt, null);
+        });
+        it("should be idempotent", async () => {
+            const session = request(app);
+            const user = await dummyUser({ session });
+            const comic = await dummyComic({ userid: user._id });
+            await session.put(`/comic/publish/${comic._id}`).expect(200);
+            await session.put(`/comic/publish/${comic._id}`).expect(200);
+            assert.notEqual((await Comic.findOne({}).exec())!.publishedAt, null);
+        });
+        it("should fail if comic does not exist", async () => {
+            const session = request(app);
+            await dummyUser({ session });
+            const comic = await dummyComic();
+            await Comic.deleteMany({});
+            const res = await session.put(`/comic/publish/${comic._id}`).expect(400);
+            assert.equal(res.body.error, "no comic found with given id");
+        });
+        it("should fail if user is unverified", async () => {
+            const session = request(app);
+            const user = await dummyUser({ session, verified: false });
+            const comic = await dummyComic({ userid: user._id });
+            const res = await session.put(`/comic/publish/${comic._id}`).expect(401);
+            assert.equal(res.body.error, "must be verified to perform requested action");
+        });
+        it("should fail if user is not the author", async () => {
+            const session = request(app);
+            await dummyUser({ session });
+            const comic = await dummyComic();
+            const res = await session.put(`/comic/publish/${comic._id}`).expect(401);
+            assert.equal(res.body.error, "must be the author to modify the selected resource");
+        });
+        it("should fail if user is not logged in", async () => {
+            const comic = await dummyComic();
+            const res = await request(app).put(`/comic/publish/${comic._id}`).expect(401);
+            assert.equal(res.body.error, "not logged in");
+        });
+    });
+    describe("PUT /comic/unpublish/:id", function () {
+        it("should unpublish a comic", async () => {
+            const session = request(app);
+            const user = await dummyUser({ session });
+            const comic = await dummyComic({ userid: user._id, publishedAt: new Date() });
+            const res = await session.put(`/comic/unpublish/${comic._id}`).expect(200);
+            assert.equal(res.body.message, "successfully unpublished");
+            assert.equal((await Comic.findOne({}).exec())!.publishedAt, null);
+        });
+        it("should be idempotent", async () => {
+            const session = request(app);
+            const user = await dummyUser({ session });
+            const comic = await dummyComic({ userid: user._id });
+            await session.put(`/comic/unpublish/${comic._id}`).expect(200);
+            await session.put(`/comic/unpublish/${comic._id}`).expect(200);
+            assert.equal((await Comic.findOne({}).exec())!.publishedAt, null);
+        });
+        it("should fail if comic does not exist", async () => {
+            const session = request(app);
+            await dummyUser({ session });
+            const comic = await dummyComic();
+            await Comic.deleteMany({});
+            const res = await session.put(`/comic/unpublish/${comic._id}`).expect(400);
+            assert.equal(res.body.error, "no comic found with given id");
+        });
+        it("should fail if user is unverified", async () => {
+            const session = request(app);
+            const user = await dummyUser({ session, verified: false });
+            const comic = await dummyComic({ userid: user._id });
+            const res = await session.put(`/comic/unpublish/${comic._id}`).expect(401);
+            assert.equal(res.body.error, "must be verified to perform requested action");
+        });
+        it("should fail if user is not the author", async () => {
+            const session = request(app);
+            await dummyUser({ session });
+            const comic = await dummyComic();
+            const res = await session.put(`/comic/unpublish/${comic._id}`).expect(401);
+            assert.equal(res.body.error, "must be the author to modify the selected resource");
+        });
+        it("should fail if user is not logged in", async () => {
+            const comic = await dummyComic();
+            const res = await request(app).put(`/comic/unpublish/${comic._id}`).expect(401);
+            assert.equal(res.body.error, "not logged in");
         });
     });
 });
