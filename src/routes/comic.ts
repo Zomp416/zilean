@@ -1,8 +1,7 @@
 import express from "express";
-import { isAuthenticated } from "../util/passport-config";
+import { isAuthenticated, isVerified, findComic, isAuthor } from "../util/middlewares";
 import Comic, { IComic } from "../models/comic";
 import User, { IUser } from "../models/user";
-
 const router = express.Router();
 
 // SEARCH COMICS
@@ -107,23 +106,14 @@ router.get("/search", async (req, res, next) => {
 });
 
 // GET COMIC
-router.get("/:id", async (req, res, next) => {
-    const comic = await Comic.findById(req.params.id);
-    if (!comic) {
-        res.status(400).json({ error: "No comic found" });
-        return next();
-    }
-    res.status(200).json({ data: comic });
+router.get("/:id", findComic, async (req, res, next) => {
+    res.status(200).json({ data: req.payload });
     return next();
 });
 
 // CREATE COMIC - AUTH
-router.post("/", isAuthenticated, async (req, res, next) => {
+router.post("/", isAuthenticated, isVerified, async (req, res, next) => {
     const user = req.user as IUser;
-    if (!user.verified) {
-        res.status(401).json({ error: "Must be verified to create a comic." });
-        return next();
-    }
 
     const newComic = new Comic({
         title: "Unnamed Comic",
@@ -140,52 +130,23 @@ router.post("/", isAuthenticated, async (req, res, next) => {
 });
 
 // UPDATE COMIC - AUTH
-router.put("/:id", isAuthenticated, async (req, res, next) => {
-    const user = req.user as IUser;
-    let comic = await Comic.findById(req.params.id);
-
-    if (!comic) {
-        res.status(400).json({ error: "No comic found" });
-        return next();
-    }
-
-    if (!user.verified) {
-        res.status(401).json({ error: "Must be verified to update a comic." });
-        return next();
-    }
-
-    if (comic.author.toString() !== user._id.toString()) {
-        res.status(401).json({ error: "Must be the author to update comic." });
-        return next();
-    }
+router.put("/:id", isAuthenticated, isVerified, findComic, isAuthor, async (req, res, next) => {
+    let comic: IComic | null = req.payload as IComic;
 
     // TODO assert that req.body.comic is actually a comic
     const updatedComic = req.body.comic as IComic;
-    comic = await Comic.findByIdAndUpdate(comic._id, updatedComic, { returnDocument: "after" });
+    comic = await Comic.findByIdAndUpdate(comic?._id, updatedComic, {
+        returnDocument: "after",
+    });
 
     res.status(200).json({ data: comic });
     return next();
 });
 
 // DELETE COMIC - AUTH
-router.delete("/:id", isAuthenticated, async (req, res, next) => {
+router.delete("/:id", isAuthenticated, isVerified, findComic, isAuthor, async (req, res, next) => {
     const user = req.user as IUser;
-    const comic = await Comic.findById(req.params.id);
-
-    if (!comic) {
-        res.status(400).json({ error: "No comic found" });
-        return next();
-    }
-
-    if (!user.verified) {
-        res.status(401).json({ error: "Must be verified to delete a comic." });
-        return next();
-    }
-
-    if (comic.author.toString() !== user._id.toString()) {
-        res.status(401).json({ error: "Must be the author to delete comic." });
-        return next();
-    }
+    const comic = req.payload as IComic;
 
     await comic.delete();
     await User.findByIdAndUpdate(user._id, { $pull: { comics: comic._id } });

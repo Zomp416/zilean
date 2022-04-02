@@ -1,6 +1,5 @@
 import bcrypt from "bcrypt";
 import { NativeError } from "mongoose";
-import { Request, Response, NextFunction } from "express";
 import passport from "passport";
 import passportLocal from "passport-local";
 import User, { IUser } from "../models/user";
@@ -38,13 +37,4 @@ passport.use(
         }
     })
 );
-
-export const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
-    if (req.isAuthenticated()) {
-        return next();
-    }
-    // TODO figure out best way to handle
-    res.status(401).json({ error: "NOT LOGGED IN" });
-};
-
 export default passport;

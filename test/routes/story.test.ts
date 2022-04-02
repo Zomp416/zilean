@@ -36,7 +36,7 @@ describe("story routes", function () {
             const story = await dummyStory();
             await Story.deleteMany({});
             const res = await request(app).get(`/story/${story._id}`).expect(400);
-            assert.equal(res.body.error, "No story found");
+            assert.equal(res.body.error, "no story found with given id");
         });
     });
 
@@ -54,12 +54,12 @@ describe("story routes", function () {
             const session = request(app);
             await dummyUser({ session, verified: false });
             const res = await session.post("/story").expect(401);
-            assert.equal(res.body.error, "Must be verified to create a story.");
+            assert.equal(res.body.error, "must be verified to perform requested action");
             assert.equal(await Story.countDocuments(), 0);
         });
         it("should fail if user is not logged in", async () => {
             const res = await request(app).post("/story").expect(401);
-            assert.equal(res.body.error, "NOT LOGGED IN");
+            assert.equal(res.body.error, "not logged in");
             assert.equal(await Story.countDocuments(), 0);
         });
     });
@@ -83,26 +83,26 @@ describe("story routes", function () {
             const story = await dummyStory();
             await Story.deleteMany({});
             const res = await session.put(`/story/${story._id}`).expect(400);
-            assert.equal(res.body.error, "No story found");
+            assert.equal(res.body.error, "no story found with given id");
         });
         it("should fail if user is unverified", async () => {
             const session = request(app);
             const user = await dummyUser({ session, verified: false });
             const story = await dummyStory({ userid: user._id });
             const res = await session.put(`/story/${story._id}`).expect(401);
-            assert.equal(res.body.error, "Must be verified to update a story.");
+            assert.equal(res.body.error, "must be verified to perform requested action");
         });
         it("should fail if user is not the author", async () => {
             const session = request(app);
             await dummyUser({ session });
             const story = await dummyStory();
             const res = await session.put(`/story/${story._id}`).expect(401);
-            assert.equal(res.body.error, "Must be the author to update story.");
+            assert.equal(res.body.error, "must be the author to modify the selected resource");
         });
         it("should fail if user is not logged in", async () => {
             const story = await dummyStory();
             const res = await request(app).put(`/story/${story._id}`).expect(401);
-            assert.equal(res.body.error, "NOT LOGGED IN");
+            assert.equal(res.body.error, "not logged in");
         });
     });
 
@@ -122,14 +122,14 @@ describe("story routes", function () {
             const story = await dummyStory();
             await Story.deleteMany({});
             const res = await session.delete(`/story/${story._id}`).expect(400);
-            assert.equal(res.body.error, "No story found");
+            assert.equal(res.body.error, "no story found with given id");
         });
         it("should fail if user is unverified", async () => {
             const session = request(app);
             const user = await dummyUser({ session, verified: false });
             const story = await dummyStory({ userid: user._id });
             const res = await session.delete(`/story/${story._id}`).expect(401);
-            assert.equal(res.body.error, "Must be verified to delete a story.");
+            assert.equal(res.body.error, "must be verified to perform requested action");
             assert.equal(await Story.countDocuments(), 1);
         });
         it("should fail if user is not the author", async () => {
@@ -137,13 +137,13 @@ describe("story routes", function () {
             await dummyUser({ session });
             const story = await dummyStory();
             const res = await session.delete(`/story/${story._id}`).expect(401);
-            assert.equal(res.body.error, "Must be the author to delete story.");
+            assert.equal(res.body.error, "must be the author to modify the selected resource");
             assert.equal(await Story.countDocuments(), 1);
         });
         it("should fail if user is not logged in", async () => {
             const story = await dummyStory();
             const res = await request(app).put(`/story/${story._id}`).expect(401);
-            assert.equal(res.body.error, "NOT LOGGED IN");
+            assert.equal(res.body.error, "not logged in");
             assert.equal(await Story.countDocuments(), 1);
         });
     });

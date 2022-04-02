@@ -1,5 +1,5 @@
 import express from "express";
-import { isAuthenticated } from "../util/passport-config";
+import { isAuthenticated, isVerified, findStory, isAuthor } from "../util/middlewares";
 import Story, { IStory } from "../models/story";
 import User, { IUser } from "../models/user";
 
@@ -107,23 +107,14 @@ router.get("/search", async (req, res, next) => {
 });
 
 // GET STORY
-router.get("/:id", async (req, res, next) => {
-    const story = await Story.findById(req.params.id);
-    if (!story) {
-        res.status(400).json({ error: "No story found" });
-        return next();
-    }
-    res.status(200).json({ data: story });
+router.get("/:id", findStory, async (req, res, next) => {
+    res.status(200).json({ data: req.payload });
     return next();
 });
 
 // CREATE STORY - AUTH
-router.post("/", isAuthenticated, async (req, res, next) => {
+router.post("/", isAuthenticated, isVerified, async (req, res, next) => {
     const user = req.user as IUser;
-    if (!user.verified) {
-        res.status(401).json({ error: "Must be verified to create a story." });
-        return next();
-    }
 
     const newStory = new Story({
         title: "Unnamed Story",
@@ -140,24 +131,9 @@ router.post("/", isAuthenticated, async (req, res, next) => {
 });
 
 // UPDATE STORY - AUTH
-router.put("/:id", isAuthenticated, async (req, res, next) => {
+router.put("/:id", isAuthenticated, isVerified, findStory, isAuthor, async (req, res, next) => {
     const user = req.user as IUser;
-    let story = await Story.findById(req.params.id);
-
-    if (!story) {
-        res.status(400).json({ error: "No story found" });
-        return next();
-    }
-
-    if (!user.verified) {
-        res.status(401).json({ error: "Must be verified to update a story." });
-        return next();
-    }
-
-    if (story.author.toString() !== user._id.toString()) {
-        res.status(401).json({ error: "Must be the author to update story." });
-        return next();
-    }
+    let story: IStory | null = req.payload as IStory;
 
     // TODO assert that req.body.story is actually a story
     const updatedStory = req.body.story as IStory;
@@ -168,24 +144,9 @@ router.put("/:id", isAuthenticated, async (req, res, next) => {
 });
 
 // DELETE STORY - AUTH
-router.delete("/:id", isAuthenticated, async (req, res, next) => {
+router.delete("/:id", isAuthenticated, isVerified, findStory, isAuthor, async (req, res, next) => {
     const user = req.user as IUser;
-    const story = await Story.findById(req.params.id);
-
-    if (!story) {
-        res.status(400).json({ error: "No story found" });
-        return next();
-    }
-
-    if (!user.verified) {
-        res.status(401).json({ error: "Must be verified to delete a story." });
-        return next();
-    }
-
-    if (story.author.toString() !== user._id.toString()) {
-        res.status(401).json({ error: "Must be the author to delete story." });
-        return next();
-    }
+    const story = req.payload as IStory;
 
     await story.delete();
     await User.findByIdAndUpdate(user._id, { $pull: { stories: story._id } });

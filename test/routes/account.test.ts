@@ -80,7 +80,7 @@ describe("account routes", function () {
         });
         it("should fail if unauthenticated", async () => {
             const res = await request(app).get("/account").expect(401);
-            assert.equal(res.body.error, "NOT LOGGED IN");
+            assert.equal(res.body.error, "not logged in");
             assert.equal(res.body.data, undefined);
         });
     });
@@ -107,7 +107,7 @@ describe("account routes", function () {
             const res1 = await session.post("/account/logout").expect(200);
             const res2 = await request(app).get("/account").expect(401);
             assert.equal(res1.body.message, "Logged Out!");
-            assert.equal(res2.body.error, "NOT LOGGED IN");
+            assert.equal(res2.body.error, "not logged in");
         });
         it("should not error on logout even when not logged in", async () => {
             await request(app).post("/account/logout").expect(200);

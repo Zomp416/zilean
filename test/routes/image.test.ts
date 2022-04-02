@@ -42,7 +42,7 @@ describe("account routes", function () {
             const image = await dummyImage();
             await Image.deleteMany({});
             const res = await request(app).get(`/image/${image._id}`).expect(400);
-            assert.equal(res.body.error, "No image found");
+            assert.equal(res.body.error, "no image found with given id");
         });
     });
 
@@ -57,7 +57,7 @@ describe("account routes", function () {
                 .field("name", "cabbage")
                 .attach("image", "./test/assets/test.jpg")
                 .expect(200);
-            assert.equal(res.body.data.uploadedBy, user._id);
+            assert.equal(res.body.data.author, user._id);
             assert.equal(res.body.data.name, "cabbage");
             assert.equal(res.body.data.searchable, true);
             assert.equal(res.body.data.imageURL.startsWith("assets"), true);
@@ -74,7 +74,7 @@ describe("account routes", function () {
                 .field("name", "cabbage")
                 .attach("image", "./test/assets/test.jpg")
                 .expect(200);
-            assert.equal(res.body.data.uploadedBy, user._id);
+            assert.equal(res.body.data.author, user._id);
             assert.equal(res.body.data.name, "cabbage");
             assert.equal(res.body.data.searchable, false);
             assert.equal(res.body.data.imageURL.startsWith("avatars"), true);
@@ -91,7 +91,7 @@ describe("account routes", function () {
                 .field("name", "cabbage")
                 .attach("image", "./test/assets/test.jpg")
                 .expect(200);
-            assert.equal(res.body.data.uploadedBy, user._id);
+            assert.equal(res.body.data.author, user._id);
             assert.equal(res.body.data.name, "cabbage");
             assert.equal(res.body.data.searchable, false);
             assert.equal(res.body.data.imageURL.startsWith("thumbnails"), true);
@@ -180,13 +180,13 @@ describe("account routes", function () {
             const session = request(app);
             await dummyUser({ session, verified: false });
             const res = await session.post("/image").expect(401);
-            assert.equal(res.body.error, "Must be verified to upload an image.");
+            assert.equal(res.body.error, "must be verified to perform requested action");
             assert.equal(uploadObjectStub.callCount, 0);
             assert.equal(await Image.countDocuments(), 0);
         });
         it("should fail if user is not logged in", async () => {
             const res = await request(app).post("/image").expect(401);
-            assert.equal(res.body.error, "NOT LOGGED IN");
+            assert.equal(res.body.error, "not logged in");
             assert.equal(uploadObjectStub.callCount, 0);
             assert.equal(await Image.countDocuments(), 0);
         });
@@ -211,26 +211,26 @@ describe("account routes", function () {
             const image = await dummyImage();
             await Image.deleteMany({});
             const res = await session.put(`/image/${image._id}`).expect(400);
-            assert.equal(res.body.error, "No image found");
+            assert.equal(res.body.error, "no image found with given id");
         });
         it("should fail if user is unverified", async () => {
             const session = request(app);
             const user = await dummyUser({ session, verified: false });
             const image = await dummyImage({ userid: user._id });
             const res = await session.put(`/image/${image._id}`).expect(401);
-            assert.equal(res.body.error, "Must be verified to update an image.");
+            assert.equal(res.body.error, "must be verified to perform requested action");
         });
         it("should fail if user is not the author", async () => {
             const session = request(app);
             await dummyUser({ session });
             const image = await dummyImage();
             const res = await session.put(`/image/${image._id}`).expect(401);
-            assert.equal(res.body.error, "Must be the author to update image.");
+            assert.equal(res.body.error, "must be the author to modify the selected resource");
         });
         it("should fail if user is not logged in", async () => {
             const image = await dummyImage();
             const res = await request(app).put(`/image/${image._id}`).expect(401);
-            assert.equal(res.body.error, "NOT LOGGED IN");
+            assert.equal(res.body.error, "not logged in");
         });
     });
 
@@ -250,7 +250,7 @@ describe("account routes", function () {
             const image = await dummyImage();
             await Image.deleteMany({});
             const res = await session.delete(`/image/${image._id}`).expect(400);
-            assert.equal(res.body.error, "No image found");
+            assert.equal(res.body.error, "no image found with given id");
             assert.equal(deleteObjectStub.callCount, 0);
         });
         it("should fail if user is unverified", async () => {
@@ -258,7 +258,7 @@ describe("account routes", function () {
             const user = await dummyUser({ session, verified: false });
             const image = await dummyImage({ userid: user._id });
             const res = await session.delete(`/image/${image._id}`).expect(401);
-            assert.equal(res.body.error, "Must be verified to delete an image.");
+            assert.equal(res.body.error, "must be verified to perform requested action");
             assert.equal(deleteObjectStub.callCount, 0);
             assert.equal(await Image.countDocuments(), 1);
         });
@@ -267,14 +267,14 @@ describe("account routes", function () {
             await dummyUser({ session });
             const image = await dummyImage();
             const res = await session.delete(`/image/${image._id}`).expect(401);
-            assert.equal(res.body.error, "Must be the author to delete image.");
+            assert.equal(res.body.error, "must be the author to modify the selected resource");
             assert.equal(deleteObjectStub.callCount, 0);
             assert.equal(await Image.countDocuments(), 1);
         });
         it("should fail if user is not logged in", async () => {
             const image = await dummyImage();
             const res = await request(app).put(`/image/${image._id}`).expect(401);
-            assert.equal(res.body.error, "NOT LOGGED IN");
+            assert.equal(res.body.error, "not logged in");
             assert.equal(deleteObjectStub.callCount, 0);
             assert.equal(await Image.countDocuments(), 1);
         });
