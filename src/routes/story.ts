@@ -97,13 +97,19 @@ router.get("/search", async (req, res, next) => {
         storyQuery.sort(req.query.sort);
     }
 
-    // TODO PAGINATION AND LIMITS
-
-    // EXECUTE QUERY
-    const stories = await storyQuery.exec();
-
-    res.status(200).json({ data: stories });
-    return;
+    // EXECUTE QUERY (with pagination)
+    if (req.query.page && req.query.limit) {
+        const stories = await Story.paginate(storyQuery, {
+            page: parseInt(req.query.page as string),
+            limit: parseInt(req.query.limit as string),
+        });
+        res.status(200).json({ data: stories.docs });
+    }
+    // EXECUTE QUERY (normally)
+    else {
+        const stories = await storyQuery.exec();
+        res.status(200).json({ data: stories });
+    }
 });
 
 // GET STORY

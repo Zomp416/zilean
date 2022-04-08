@@ -73,13 +73,19 @@ router.get("/search", async (req, res, next) => {
         userQuery.sort(req.query.sort);
     }
 
-    // TODO PAGINATION AND LIMITS
-
-    // EXECUTE QUERY
-    const users = await userQuery.exec();
-
-    res.status(200).json({ data: users });
-    return;
+    // EXECUTE QUERY (with pagination)
+    if (req.query.page && req.query.limit) {
+        const users = await User.paginate(userQuery, {
+            page: parseInt(req.query.page as string),
+            limit: parseInt(req.query.limit as string),
+        });
+        res.status(200).json({ data: users.docs });
+    }
+    // EXECUTE QUERY (normally)
+    else {
+        const users = await userQuery.exec();
+        res.status(200).json({ data: users });
+    }
 });
 
 // GET USER
