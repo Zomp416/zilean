@@ -111,13 +111,19 @@ router.get("/search", async (req, res, next) => {
         imageQuery.sort(req.query.sort);
     }
 
-    // TODO PAGINATION AND LIMITS
-
-    // EXECUTE QUERY
-    const images = await imageQuery.exec();
-
-    res.status(200).json({ data: images });
-    return;
+    // EXECUTE QUERY (with pagination)
+    if (req.query.page && req.query.limit) {
+        const images = await Image.paginate(imageQuery, {
+            page: parseInt(req.query.page as string),
+            limit: parseInt(req.query.limit as string),
+        });
+        res.status(200).json({ data: images.docs });
+    }
+    // EXECUTE QUERY (normally)
+    else {
+        const images = await imageQuery.exec();
+        res.status(200).json({ data: images });
+    }
 });
 
 // GET IMAGE

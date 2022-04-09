@@ -1,4 +1,5 @@
-import { Document, Types, Schema, model } from "mongoose";
+import { PaginateModel, Document, Types, Schema, model } from "mongoose";
+import mongoosePaginate from "mongoose-paginate";
 
 export interface IImageProperties {
     image: Types.ObjectId;
@@ -121,5 +122,6 @@ const comicSchema = new Schema<IComic>(
     { timestamps: true }
 );
 
-const Comic = model<IComic>("Comic", comicSchema);
+comicSchema.plugin(mongoosePaginate);
+const Comic: PaginateModel<IComic> = model<IComic>("Comic", comicSchema) as PaginateModel<IComic>;
 export default Comic;

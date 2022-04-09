@@ -224,6 +224,15 @@ describe("comic routes", function () {
             assert.equal(data[2].title < data[3].title, true);
             assert.equal(data[3].title < data[4].title, true);
         });
+        it("should paginate correctly", async () => {
+            for (let i = 0; i < 3; i++) await dummyComic({ publishedAt: new Date() });
+            const res1 = await request(app).get("/comic/search?page=1&limit=2").expect(200);
+            const res2 = await request(app).get("/comic/search?page=2&limit=2").expect(200);
+            const res3 = await request(app).get("/comic/search?page=3&limit=2").expect(200);
+            assert.equal(res1.body.data.length, 2);
+            assert.equal(res2.body.data.length, 1);
+            assert.equal(res3.body.data.length, 0);
+        });
     });
     describe("PUT /comic/publish/:id", function () {
         it("should publish a comic", async () => {

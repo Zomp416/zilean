@@ -96,13 +96,19 @@ router.get("/search", async (req, res, next) => {
         comicQuery.sort(req.query.sort);
     }
 
-    // TODO PAGINATION AND LIMITS
-
-    // EXECUTE QUERY
-    const comics = await comicQuery.exec();
-
-    res.status(200).json({ data: comics });
-    return;
+    // EXECUTE QUERY (with pagination)
+    if (req.query.page && req.query.limit) {
+        const comics = await Comic.paginate(comicQuery, {
+            page: parseInt(req.query.page as string),
+            limit: parseInt(req.query.limit as string),
+        });
+        res.status(200).json({ data: comics.docs });
+    }
+    // EXECUTE QUERY (normally)
+    else {
+        const comics = await comicQuery.exec();
+        res.status(200).json({ data: comics });
+    }
 });
 
 // GET COMIC
