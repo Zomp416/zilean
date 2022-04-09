@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from "express";
 
-import Comic from "../models/comic";
-import User, { IUser } from "../models/user";
+import Comic, { IComic } from "../models/comic";
+import { IUser } from "../models/user";
 import Image from "../models/image";
-import Story from "../models/story";
+import Story, { IStory } from "../models/story";
 
 export const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
     if (req.isAuthenticated()) return next();
@@ -57,5 +57,12 @@ export const isAuthor = (req: Request, res: Response, next: NextFunction) => {
     const user = req.user as IUser;
     if (req.payload?.author?.toString() !== user._id.toString())
         res.status(401).json({ error: "must be the author to modify the selected resource" });
+    else return next();
+};
+
+export const isPublished = (req: Request, res: Response, next: NextFunction) => {
+    const payload = req.payload as IComic | IStory;
+    if (!payload.publishedAt)
+        res.status(401).json({ error: "resource must be published to perform requested action" });
     else return next();
 };
