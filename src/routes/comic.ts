@@ -236,7 +236,7 @@ router.put(
         );
 
         res.status(200).json({
-            data: { ratingTotal: comic?.ratingTotal, count: comic?.ratingCount },
+            data: { ratingTotal: comic?.ratingTotal, ratingCount: comic?.ratingCount },
         });
         return next();
     }
@@ -253,14 +253,14 @@ router.post(
         let comic: IComic | null = req.payload as IComic;
         const user = req.user as IUser;
 
-        if (!req.body.comment) {
+        if (!req.body.text) {
             res.status(400).json({ error: "message body is missing information" });
             return next();
         }
 
         comic = await Comic.findByIdAndUpdate(
             comic?._id,
-            { $push: { comments: { text: req.body.comment, author: user._id } } },
+            { $push: { comments: { text: req.body.text, author: user._id } } },
             { returnDocument: "after" }
         );
 

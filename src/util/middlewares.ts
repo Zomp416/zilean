@@ -63,6 +63,6 @@ export const isAuthor = (req: Request, res: Response, next: NextFunction) => {
 export const isPublished = (req: Request, res: Response, next: NextFunction) => {
     const payload = req.payload as IComic | IStory;
     if (!payload.publishedAt)
-        res.status(401).json({ error: "resource must be published to perform requested action" });
+        res.status(400).json({ error: "resource must be published to perform requested action" });
     else return next();
 };
