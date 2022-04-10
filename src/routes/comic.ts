@@ -242,4 +242,33 @@ router.put(
     }
 );
 
+// COMMENT ON COMIC
+router.post(
+    "/comment/:id",
+    isAuthenticated,
+    isVerified,
+    findComic,
+    isPublished,
+    async (req, res, next) => {
+        let comic: IComic | null = req.payload as IComic;
+        const user = req.user as IUser;
+
+        if (!req.body.comment) {
+            res.status(400).json({ error: "message body is missing information" });
+            return next();
+        }
+
+        comic = await Comic.findByIdAndUpdate(
+            comic?._id,
+            { $push: { comments: { text: req.body.comment, author: user._id } } },
+            { returnDocument: "after" }
+        );
+
+        res.status(200).json({
+            data: { comments: comic?.comments },
+        });
+        return next();
+    }
+);
+
 export default router;
