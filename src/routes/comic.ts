@@ -1,5 +1,5 @@
 import express from "express";
-import { isAuthenticated, isVerified, findComic, isAuthor } from "../util/middlewares";
+import { isAuthenticated, isVerified, findComic, isAuthor, isPublished } from "../util/middlewares";
 import Comic, { IComic } from "../models/comic";
 import User, { IUser } from "../models/user";
 const router = express.Router();
@@ -190,6 +190,83 @@ router.put(
         await Comic.findByIdAndUpdate(comic._id, { publishedAt: null });
 
         res.status(200).json({ message: "successfully unpublished" });
+        return next();
+    }
+);
+
+// RATE COMIC
+router.put(
+    "/rate/:id",
+    isAuthenticated,
+    isVerified,
+    findComic,
+    isPublished,
+    async (req, res, next) => {
+        let comic: IComic | null = req.payload as IComic;
+        const user = req.user as IUser;
+
+        const rating = parseFloat(req.body.rating);
+        if (!rating || rating > 5 || rating < 0) {
+            res.status(400).json({ error: "invalid rating" });
+            return next();
+        }
+
+        let total = comic.ratingTotal;
+        let count = comic.ratingCount;
+
+        const prev = user.comicRatings.find(x => x.id.toString() === req.params.id);
+        if (prev) {
+            total += rating - prev.rating;
+            await User.findByIdAndUpdate(user._id, {
+                $pull: { comicRatings: { id: req.params.id } },
+            });
+        } else {
+            count += 1;
+            total += rating;
+        }
+
+        await User.findByIdAndUpdate(user._id, {
+            $push: { comicRatings: { rating: rating, id: req.params.id } },
+        });
+
+        comic = await Comic.findByIdAndUpdate(
+            comic?._id,
+            { ratingTotal: total, ratingCount: count },
+            { returnDocument: "after" }
+        );
+
+        res.status(200).json({
+            data: { ratingTotal: comic?.ratingTotal, ratingCount: comic?.ratingCount },
+        });
+        return next();
+    }
+);
+
+// COMMENT ON COMIC
+router.post(
+    "/comment/:id",
+    isAuthenticated,
+    isVerified,
+    findComic,
+    isPublished,
+    async (req, res, next) => {
+        let comic: IComic | null = req.payload as IComic;
+        const user = req.user as IUser;
+
+        if (!req.body.text) {
+            res.status(400).json({ error: "message body is missing information" });
+            return next();
+        }
+
+        comic = await Comic.findByIdAndUpdate(
+            comic?._id,
+            { $push: { comments: { text: req.body.text, author: user._id } } },
+            { returnDocument: "after" }
+        );
+
+        res.status(200).json({
+            data: { comments: comic?.comments },
+        });
         return next();
     }
 );

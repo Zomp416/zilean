@@ -324,4 +324,142 @@ describe("story routes", function () {
             assert.equal(res.body.error, "not logged in");
         });
     });
+    describe("PUT /story/rate/:id", function () {
+        it("should rate a story properly", async () => {
+            const session = request(app);
+            await dummyUser({ session });
+            const story = await dummyStory({ publishedAt: new Date() });
+            const res = await session
+                .put(`/story/rate/${story._id}`)
+                .send({ rating: 5 })
+                .expect(200);
+            const resStory = await Story.findOne({}).exec();
+            const resUser = await User.findOne({}).exec();
+            assert.equal(res.body.data.ratingTotal, 5);
+            assert.equal(res.body.data.ratingCount, 1);
+            assert.equal(resStory?.ratingTotal, 5);
+            assert.equal(resStory?.ratingCount, 1);
+            assert.equal(resUser?.storyRatings.length, 1);
+            assert.equal(resUser?.storyRatings[0].id.toString(), story._id.toString());
+            assert.equal(resUser?.storyRatings[0].rating, 5);
+        });
+        it("should change a story rating properly", async () => {
+            const session = request(app);
+            await dummyUser({ session });
+            const story = await dummyStory({ publishedAt: new Date() });
+            await session.put(`/story/rate/${story._id}`).send({ rating: 5 }).expect(200);
+            const res = await session
+                .put(`/story/rate/${story._id}`)
+                .send({ rating: 3 })
+                .expect(200);
+            const resStory = await Story.findOne({}).exec();
+            const resUser = await User.findOne({}).exec();
+            assert.equal(res.body.data.ratingTotal, 3);
+            assert.equal(res.body.data.ratingCount, 1);
+            assert.equal(resStory?.ratingTotal, 3);
+            assert.equal(resStory?.ratingCount, 1);
+            assert.equal(resUser?.storyRatings.length, 1);
+            assert.equal(resUser?.storyRatings[0].id.toString(), story._id.toString());
+            assert.equal(resUser?.storyRatings[0].rating, 3);
+        });
+        it("should fail if story does not exist", async () => {
+            const session = request(app);
+            await dummyUser({ session });
+            const story = await dummyStory();
+            await Story.deleteMany({});
+            const res = await session.put(`/story/rate/${story._id}`).expect(400);
+            assert.equal(res.body.error, "no story found with given id");
+        });
+        it("should fail if story is not published", async () => {
+            const session = request(app);
+            await dummyUser({ session });
+            const story = await dummyStory();
+            const res = await session.put(`/story/rate/${story._id}`).expect(400);
+            assert.equal(res.body.error, "resource must be published to perform requested action");
+        });
+        it("should fail if user is unverified", async () => {
+            const session = request(app);
+            await dummyUser({ session, verified: false });
+            const story = await dummyStory();
+            const res = await session.put(`/story/rate/${story._id}`).expect(401);
+            assert.equal(res.body.error, "must be verified to perform requested action");
+        });
+        it("should fail if user is not logged in", async () => {
+            const story = await dummyStory();
+            const res = await request(app).put(`/story/rate/${story._id}`).expect(401);
+            assert.equal(res.body.error, "not logged in");
+        });
+        it("should fail if missing rating in body", async () => {
+            const session = request(app);
+            await dummyUser({ session });
+            const story = await dummyStory({ publishedAt: new Date() });
+            const res = await session.put(`/story/rate/${story._id}`).expect(400);
+            assert.equal(res.body.error, "invalid rating");
+        });
+        it("should fail if rating is outside valid range", async () => {
+            const session = request(app);
+            await dummyUser({ session });
+            const story = await dummyStory({ publishedAt: new Date() });
+            const res1 = await session
+                .put(`/story/rate/${story._id}`)
+                .send({ rating: -1 })
+                .expect(400);
+            const res2 = await session
+                .put(`/story/rate/${story._id}`)
+                .send({ rating: 6 })
+                .expect(400);
+            assert.equal(res1.body.error, "invalid rating");
+            assert.equal(res2.body.error, "invalid rating");
+        });
+    });
+    describe("POST /story/comment/:id", function () {
+        it("should comment on a story properly", async () => {
+            const session = request(app);
+            await dummyUser({ session });
+            const story = await dummyStory({ publishedAt: new Date() });
+            const res = await session
+                .post(`/story/comment/${story._id}`)
+                .send({ text: "_" })
+                .expect(200);
+            const resStory = await Story.findOne({}).exec();
+            assert.equal(res.body.data.comments.length, 1);
+            assert.equal(res.body.data.comments[0].text, "_");
+            assert.equal(resStory?.comments.length, 1);
+            assert.equal(resStory?.comments[0].text, "_");
+        });
+        it("should fail if story does not exist", async () => {
+            const session = request(app);
+            await dummyUser({ session });
+            const story = await dummyStory();
+            await Story.deleteMany({});
+            const res = await session.post(`/story/comment/${story._id}`).expect(400);
+            assert.equal(res.body.error, "no story found with given id");
+        });
+        it("should fail if story is not published", async () => {
+            const session = request(app);
+            await dummyUser({ session });
+            const story = await dummyStory();
+            const res = await session.post(`/story/comment/${story._id}`).expect(400);
+            assert.equal(res.body.error, "resource must be published to perform requested action");
+        });
+        it("should fail if user is unverified", async () => {
+            const session = request(app);
+            await dummyUser({ session, verified: false });
+            const story = await dummyStory();
+            const res = await session.post(`/story/comment/${story._id}`).expect(401);
+            assert.equal(res.body.error, "must be verified to perform requested action");
+        });
+        it("should fail if user is not logged in", async () => {
+            const story = await dummyStory();
+            const res = await request(app).post(`/story/comment/${story._id}`).expect(401);
+            assert.equal(res.body.error, "not logged in");
+        });
+        it("should fail if missing comment text in body", async () => {
+            const session = request(app);
+            await dummyUser({ session });
+            const story = await dummyStory({ publishedAt: new Date() });
+            const res = await session.post(`/story/comment/${story._id}`).expect(400);
+            assert.equal(res.body.error, "message body is missing information");
+        });
+    });
 });
