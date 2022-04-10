@@ -1,5 +1,5 @@
 import express from "express";
-import { isAuthenticated, isVerified, findStory, isAuthor } from "../util/middlewares";
+import { isAuthenticated, isVerified, findStory, isAuthor, isPublished } from "../util/middlewares";
 import Story, { IStory } from "../models/story";
 import User, { IUser } from "../models/user";
 
@@ -169,9 +169,9 @@ router.put(
     findStory,
     isAuthor,
     async (req, res, next) => {
-        let comic = req.payload as IStory;
+        let story = req.payload as IStory;
 
-        await Story.findByIdAndUpdate(comic._id, { publishedAt: new Date() });
+        await Story.findByIdAndUpdate(story._id, { publishedAt: new Date() });
 
         res.status(200).json({ message: "successfully published" });
         return next();
@@ -186,11 +186,88 @@ router.put(
     findStory,
     isAuthor,
     async (req, res, next) => {
-        let comic = req.payload as IStory;
+        let story = req.payload as IStory;
 
-        await Story.findByIdAndUpdate(comic._id, { publishedAt: null });
+        await Story.findByIdAndUpdate(story._id, { publishedAt: null });
 
         res.status(200).json({ message: "successfully unpublished" });
+        return next();
+    }
+);
+
+// RATE STORY
+router.put(
+    "/rate/:id",
+    isAuthenticated,
+    isVerified,
+    findStory,
+    isPublished,
+    async (req, res, next) => {
+        let story: IStory | null = req.payload as IStory;
+        const user = req.user as IUser;
+
+        const rating = parseFloat(req.body.rating);
+        if (!rating || rating > 5 || rating < 0) {
+            res.status(400).json({ error: "invalid rating" });
+            return next();
+        }
+
+        let total = story.ratingTotal;
+        let count = story.ratingCount;
+
+        const prev = user.storyRatings.find(x => x.id.toString() === req.params.id);
+        if (prev) {
+            total += rating - prev.rating;
+            await User.findByIdAndUpdate(user._id, {
+                $pull: { storyRatings: { id: req.params.id } },
+            });
+        } else {
+            count += 1;
+            total += rating;
+        }
+
+        await User.findByIdAndUpdate(user._id, {
+            $push: { storyRatings: { rating: rating, id: req.params.id } },
+        });
+
+        story = await Story.findByIdAndUpdate(
+            story?._id,
+            { ratingTotal: total, ratingCount: count },
+            { returnDocument: "after" }
+        );
+
+        res.status(200).json({
+            data: { ratingTotal: story?.ratingTotal, ratingCount: story?.ratingCount },
+        });
+        return next();
+    }
+);
+
+// COMMENT ON STORY
+router.post(
+    "/comment/:id",
+    isAuthenticated,
+    isVerified,
+    findStory,
+    isPublished,
+    async (req, res, next) => {
+        let story: IStory | null = req.payload as IStory;
+        const user = req.user as IUser;
+
+        if (!req.body.text) {
+            res.status(400).json({ error: "message body is missing information" });
+            return next();
+        }
+
+        story = await Story.findByIdAndUpdate(
+            story?._id,
+            { $push: { comments: { text: req.body.text, author: user._id } } },
+            { returnDocument: "after" }
+        );
+
+        res.status(200).json({
+            data: { comments: story?.comments },
+        });
         return next();
     }
 );
