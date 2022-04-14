@@ -128,6 +128,7 @@ router.post("/logout", (req, res, next) => {
 // REGISTER
 router.post("/register", async (req, res, next) => {
     let { email, username, password } = req.body;
+
     if (!email || !username || !password) {
         res.status(400).json({ error: "Missing arguments in request" });
         return next();
@@ -185,7 +186,7 @@ router.put("/", isAuthenticated, async (req, res, next) => {
         return next();
     }
 
-    if (newUser._id && newUser._id !== oldUser._id) {
+    if (newUser._id && newUser._id.toString() !== oldUser._id.toString()) {
         res.status(401).json({ error: "User ID's do not match." });
         return next();
     }
@@ -325,6 +326,22 @@ router.post("/verify", async (req, res, next) => {
     await user.save();
 
     res.status(200).json({ message: "OK" });
+    return next();
+});
+
+// DELETE ACCOUNT
+router.delete("/", isAuthenticated, async (req, res, next) => {
+    const user = req.user as IUser;
+    if (!user){
+        res.status(400).json({ error: "No user found"});
+        return next();
+    }
+    const result = await User.findByIdAndRemove(user._id);
+    if (!result) {
+        res.status(401).json({ error: "Error deleting account"});
+        return next();
+    }
+    res.json({ message: "Deleted Account" });
     return next();
 });
 
