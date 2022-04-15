@@ -5,6 +5,9 @@ import { isAuthenticated } from "../util/middlewares";
 import { sendForgotPasswordEmail, sendVerifyEmail } from "../util/email-config";
 import { verifyToken } from "../util/token-config";
 import User, { IUser } from "../models/user";
+import mongoosePaginate from "mongoose-paginate";
+
+var mongoose = require('mongoose');
 
 const router = express.Router();
 
@@ -128,6 +131,7 @@ router.post("/logout", (req, res, next) => {
 // REGISTER
 router.post("/register", async (req, res, next) => {
     let { email, username, password } = req.body;
+
     if (!email || !username || !password) {
         res.status(400).json({ error: "Missing arguments in request" });
         return next();
@@ -179,21 +183,50 @@ router.post("/register", async (req, res, next) => {
 router.put("/", isAuthenticated, async (req, res, next) => {
     const oldUser = req.user as IUser;
     const newUser = req.body.user as IUser;
-
+    const oldPassword = req.body.user.oldpassword;
+    const newPassword = req.body.user.newpassword;
+    const confirmPassword = req.body.user.confirmpassword;
+    
     if (!newUser) {
         res.status(400).json({ error: "Missing arguments" });
         return next();
     }
 
-    if (newUser._id && newUser._id !== oldUser._id) {
+    if (newUser._id && newUser._id.toString() !== oldUser._id.toString()) {
         res.status(401).json({ error: "User ID's do not match." });
         return next();
     }
 
-    const user = await User.findByIdAndUpdate(oldUser._id, newUser, { returnDocument: "after" });
+    if(oldPassword === "" && newPassword === "" && confirmPassword === ""){
+        const user = await User.findByIdAndUpdate(oldUser._id, newUser, { returnDocument: "after" });
+        res.status(200).json({ data: user });
+        return next();
+    }
 
-    res.status(200).json({ data: user });
-    return next();
+    bcrypt.compare(oldPassword, oldUser.password, async function (err, result) {
+        if (err) {
+            res.status(402).json({ message: "Error in changing password" });
+            return;
+        } else if (result) {
+            if (newPassword !== confirmPassword) {
+                res.status(403).json({ message: "Passwords do not match " });
+                return next();
+            } else {
+                 if(oldPassword === newPassword){
+                    res.status(403).json({ message: "Choose a different password " });
+                    return next();
+                 }
+                  const hashedPassword = await bcrypt.hash(newPassword, 10);
+                  newUser.password = hashedPassword
+                  const user = await User.findByIdAndUpdate(oldUser._id, newUser, { returnDocument: "after" });
+                  res.status(200).json({ data: user });
+                  return next();
+            }
+        } else {
+            res.status(404).json({ message: "Passwords do not match " });
+            return next();
+        }
+    });
 });
 
 // SUBSCRIBE TO ANOTHER USER
@@ -325,6 +358,22 @@ router.post("/verify", async (req, res, next) => {
     await user.save();
 
     res.status(200).json({ message: "OK" });
+    return next();
+});
+
+// DELETE ACCOUNT
+router.delete("/", isAuthenticated, async (req, res, next) => {
+    const user = req.user as IUser;
+    if (!user) {
+        res.status(400).json({ error: "No user found" });
+        return next();
+    }
+    const result = await User.findByIdAndRemove(user._id);
+    if (!result) {
+        res.status(401).json({ error: "Error deleting account" });
+        return next();
+    }
+    res.json({ message: "Deleted Account" });
     return next();
 });
 

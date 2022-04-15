@@ -5,6 +5,7 @@ export interface IUser extends Document {
     email: string;
     username: string;
     password: string;
+    about: string;
     verified: boolean;
     comics: Types.ObjectId[];
     stories: Types.ObjectId[];
@@ -38,6 +39,10 @@ const userSchema = new Schema<IUser>(
         password: {
             type: String,
             required: true,
+        },
+        about: {
+            type: String, 
+            default: "",
         },
         verified: {
             type: Boolean,
