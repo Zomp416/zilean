@@ -99,6 +99,17 @@ router.get("/:id", async (req, res, next) => {
     return next();
 });
 
+//GET USER BY USERNAME
+router.get("/findUser/:id", async (req, res, next) => {
+    const user = await User.findOne({username: req.params.id});
+    if (!user) {
+        res.status(400).json({ error: "No user found" });
+        return next();
+    }
+    res.status(200).json({ data: user });
+    return next();
+});
+
 // LOGIN
 router.post("/login", (req, res, next) => {
     // Pass request information to passport
