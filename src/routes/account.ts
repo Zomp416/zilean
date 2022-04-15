@@ -186,8 +186,7 @@ router.put("/", isAuthenticated, async (req, res, next) => {
     const oldPassword = req.body.user.oldpassword;
     const newPassword = req.body.user.newpassword;
     const confirmPassword = req.body.user.confirmpassword;
-    let passwordMatch = false;
-
+    
     if (!newUser) {
         res.status(400).json({ error: "Missing arguments" });
         return next();
