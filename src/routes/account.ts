@@ -5,9 +5,6 @@ import { isAuthenticated } from "../util/middlewares";
 import { sendForgotPasswordEmail, sendVerifyEmail } from "../util/email-config";
 import { verifyToken } from "../util/token-config";
 import User, { IUser } from "../models/user";
-import mongoosePaginate from "mongoose-paginate";
-
-var mongoose = require('mongoose');
 
 const router = express.Router();
 
@@ -186,7 +183,7 @@ router.put("/", isAuthenticated, async (req, res, next) => {
     const oldPassword = req.body.user.oldpassword;
     const newPassword = req.body.user.newpassword;
     const confirmPassword = req.body.user.confirmpassword;
-    
+
     if (!newUser) {
         res.status(400).json({ error: "Missing arguments" });
         return next();
@@ -197,8 +194,10 @@ router.put("/", isAuthenticated, async (req, res, next) => {
         return next();
     }
 
-    if(oldPassword === "" && newPassword === "" && confirmPassword === ""){
-        const user = await User.findByIdAndUpdate(oldUser._id, newUser, { returnDocument: "after" });
+    if (oldPassword === "" && newPassword === "" && confirmPassword === "") {
+        const user = await User.findByIdAndUpdate(oldUser._id, newUser, {
+            returnDocument: "after",
+        });
         res.status(200).json({ data: user });
         return next();
     }
@@ -208,20 +207,13 @@ router.put("/", isAuthenticated, async (req, res, next) => {
             res.status(402).json({ message: "Error in changing password" });
             return;
         } else if (result) {
-            if (newPassword !== confirmPassword) {
-                res.status(403).json({ message: "Passwords do not match " });
-                return next();
-            } else {
-                 if(oldPassword === newPassword){
-                    res.status(403).json({ message: "Choose a different password " });
-                    return next();
-                 }
-                  const hashedPassword = await bcrypt.hash(newPassword, 10);
-                  newUser.password = hashedPassword
-                  const user = await User.findByIdAndUpdate(oldUser._id, newUser, { returnDocument: "after" });
-                  res.status(200).json({ data: user });
-                  return next();
-            }
+            const hashedPassword = await bcrypt.hash(newPassword, 10);
+            newUser.password = hashedPassword;
+            const user = await User.findByIdAndUpdate(oldUser._id, newUser, {
+                returnDocument: "after",
+            });
+            res.status(200).json({ data: user });
+            return next();
         } else {
             res.status(404).json({ message: "Passwords do not match " });
             return next();
