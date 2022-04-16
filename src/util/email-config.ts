@@ -20,8 +20,8 @@ const generateResetEmailHTML = (email: string, id: string, token: string) => {
             <td>
                 <table cellspacing="0" cellpadding="0">
                     <tr>
-                        <td style="border-radius: 2px;" bgcolor="blue">
-                            <a href="${process.env.ORIGIN}/reset-password/${id}/${token}" target="_blank" 
+                        <td style="border-radius: 2px;" bgcolor="#39A78E">
+                            <a href="${process.env.CLIENT_ORIGIN}/reset-password/${id}/${token}" target="_blank" 
                                 style="
                                     padding: 8px 12px; 
                                     border: 1px solid black;
@@ -66,8 +66,8 @@ const generateVerifyEmailHTML = (id: string, token: string) => {
             <td>
                 <table cellspacing="0" cellpadding="0">
                     <tr>
-                        <td style="border-radius: 2px;" bgcolor="blue">
-                            <a href="${process.env.ORIGIN}/verify/${id}/${token}" target="_blank" 
+                        <td style="border-radius: 2px;" bgcolor="#39A78E">
+                            <a href="${process.env.CLIENT_ORIGIN}/verify/${id}/${token}" target="_blank" 
                                 style="
                                     padding: 8px 12px; 
                                     border: 1px solid black;
@@ -77,7 +77,7 @@ const generateVerifyEmailHTML = (id: string, token: string) => {
                                     font-weight:bold;
                                     display: inline-block;
                             ">
-                                Reset Your Password            
+                                Verify Email           
                             </a>
                         </td>
                     </tr>
@@ -95,7 +95,7 @@ const generateVerifyEmailText = (id: string, token: string) => {
         Hello There!\n\n
         Thank you for using Zomp!\n
         You can verify your email by clicking on the following link:\n\n
-        ${process.env.ORIGIN}/reset-password/${id}/${token}\n\n
+        ${process.env.CLIENT_ORIGIN}/verify/${id}/${token}\n\n
         Sincerely,\n
         The Zomp Team
     `;
