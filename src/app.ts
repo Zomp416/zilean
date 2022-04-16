@@ -13,11 +13,7 @@ import storyRouter from "./routes/story";
 const createApp = (mongo_uri: string, session_secret: string) => {
     const app = express();
 
-    // TODO add other origins
-    const allowedOrigins = ["http://localhost:3000"];
-    allowedOrigins.forEach(origin => {
-        app.use(cors({ origin: origin, credentials: true }));
-    });
+    app.use(cors({ origin: true, credentials: true }));
     app.use(helmet());
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
