@@ -20,6 +20,9 @@ const createApp = (mongo_uri: string, session_secret: string) => {
     app.use(mongoSanitize());
     app.use(
         session({
+            cookie: {
+                domain: process.env.ENV === "development" ? "localhost" : ".zomp.works"
+            },
             resave: true,
             saveUninitialized: true,
             secret: session_secret,
