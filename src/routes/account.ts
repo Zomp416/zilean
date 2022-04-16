@@ -5,6 +5,7 @@ import { isAuthenticated } from "../util/middlewares";
 import { sendForgotPasswordEmail, sendVerifyEmail } from "../util/email-config";
 import { verifyToken } from "../util/token-config";
 import User, { IUser } from "../models/user";
+import mongoose from "mongoose";
 
 const router = express.Router();
 
@@ -275,6 +276,36 @@ router.post("/forgot-password", async (req, res, next) => {
     return next();
 });
 
+router.post("/reset-password-verify", async (req, res, next) => {
+    const { id, token } = req.body;
+
+    if (!id || !token) {
+        res.status(400).json({ error: "Must provide all required arguments to reset password" });
+        return next();
+    }
+
+    if (!mongoose.isValidObjectId(id)) {
+        res.status(400).json({ error: "Not a valid ID" });
+        return next();
+    }
+
+    const user = await User.findOne({ _id: id });
+    if (!user) {
+        res.status(400).json({ error: "User not found" });
+        return next();
+    }
+
+    const payload = verifyToken(user, token);
+
+    if (!payload) {
+        res.status(400).json({ error: "Token is invalid or expired!" });
+        return next();
+    }
+
+    res.status(200).json({ message: "OK" });
+    return next();
+});
+
 // RESET PASSWORD
 router.post("/reset-password", async (req, res, next) => {
     const { id, token, password } = req.body;
@@ -283,6 +314,12 @@ router.post("/reset-password", async (req, res, next) => {
         res.status(400).json({ error: "Must provide all required arguments to reset password" });
         return next();
     }
+
+    if (!mongoose.isValidObjectId(id)) {
+        res.status(400).json({ error: "Not a valid ID" });
+        return next();
+    }
+
 
     const user = await User.findOne({ _id: id });
     if (!user) {
@@ -314,7 +351,7 @@ router.post("/send-verify", async (req, res, next) => {
 
     const user = await User.findOne({ email: email });
     if (!user) {
-        res.status(400).json({ error: "No user with specified email" });
+        res.status(200).json({  message: "Lowkey tho there's no user with this email" });
         return next();
     }
 
@@ -330,6 +367,11 @@ router.post("/verify", async (req, res, next) => {
 
     if (!id || !token) {
         res.status(400).json({ error: "Must provide all required arguments to verify user" });
+        return next();
+    }
+
+    if (!mongoose.isValidObjectId(id)) {
+        res.status(400).json({ error: "Not a valid ID" });
         return next();
     }
 
