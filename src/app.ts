@@ -21,7 +21,7 @@ const createApp = (mongo_uri: string, session_secret: string) => {
     app.use(
         session({
             cookie: {
-                domain: process.env.ENV === "development" ? ".zomp.works" :  "localhost"
+                domain: process.env.ENV === "production" ? ".zomp.works" : "localhost"
             },
             resave: true,
             saveUninitialized: true,
