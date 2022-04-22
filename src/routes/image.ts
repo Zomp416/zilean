@@ -3,7 +3,7 @@ import { isAuthenticated, isVerified, findImage, isAuthor } from "../util/middle
 import { uploadObject, deleteObject } from "../util/s3-config";
 import Image, { IImage } from "../models/image";
 import { Request, Response, NextFunction } from "express";
-import { IUser } from "../models/user";
+import User, { IUser } from "../models/user";
 import multer from "multer";
 import { v4 } from "uuid";
 import { default as isSvg } from "is-svg";
@@ -205,6 +205,17 @@ router.delete("/:id", isAuthenticated, isVerified, findImage, isAuthor, async (r
 
     // TODO handle error case
     res.status(200).json({ message: "Successfully deleted image." });
+    return next();
+});
+
+// GET USER PROFILE PICTURE
+router.get("/profilePicture/:id", async (req, res, next) => {
+    const user = await User.findById(req.params.id).populate("profilePicture");
+    if (!user) {
+        res.status(400).json({ error: "No user found" });
+        return next();
+    }
+    res.status(200).json({ data: user });
     return next();
 });
 

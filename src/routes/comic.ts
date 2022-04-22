@@ -117,6 +117,17 @@ router.get("/:id", findComic, async (req, res, next) => {
     return next();
 });
 
+//FIND COMIC AUTHOR
+router.get("/comicAuthor/:id", async (req, res, next) => {
+    const comic = await Comic.findById(req.params.id).populate("author").populate("renderedImage");
+    if (!comic) {
+        res.status(400).json({ error: "No user found" });
+        return next();
+    }
+    res.status(200).json({ data: comic });
+    return next();
+});
+
 // CREATE COMIC - AUTH
 router.post("/", isAuthenticated, isVerified, async (req, res, next) => {
     const user = req.user as IUser;
