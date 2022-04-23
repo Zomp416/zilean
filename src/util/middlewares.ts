@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from "express";
-
 import Comic, { IComic } from "../models/comic";
 import { IUser } from "../models/user";
 import Image from "../models/image";
 import Story, { IStory } from "../models/story";
+import mongoose from "mongoose";
 
 export const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
     if (req.isAuthenticated()) return next();
@@ -18,6 +18,10 @@ export const isVerified = (req: Request, res: Response, next: NextFunction) => {
 };
 
 export const findComic = (req: Request, res: Response, next: NextFunction) => {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+        res.status(400).json({ error: "no comic found with given id" }).end();
+        return;
+    }
     Comic.findById(req.params.id)
         .exec()
         .then(comic => {
