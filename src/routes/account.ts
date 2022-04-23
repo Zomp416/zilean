@@ -100,6 +100,7 @@ router.get("/:id", async (req, res, next) => {
     return next();
 });
 
+
 //GET USER BY USERNAME
 router.get("/findUser/:id", async (req, res, next) => {
     const user = await User.findOne({username: req.params.id});
