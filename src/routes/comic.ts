@@ -2,6 +2,7 @@ import express from "express";
 import { isAuthenticated, isVerified, findComic, isAuthor, isPublished } from "../util/middlewares";
 import Comic, { IComic } from "../models/comic";
 import User, { IUser } from "../models/user";
+import { IImage } from "../models/image";
 const router = express.Router();
 
 // SEARCH COMICS
@@ -180,8 +181,14 @@ router.put(
     isAuthor,
     async (req, res, next) => {
         let comic = req.payload as IComic;
-
-        await Comic.findByIdAndUpdate(comic._id, { publishedAt: new Date() });
+        const { renderedImage } = req.body;
+        const updateObj: { publishedAt: Date; renderedImage?: IImage } = {
+            publishedAt: new Date(),
+        };
+        if (renderedImage) {
+            updateObj.renderedImage = renderedImage;
+        }
+        await Comic.findByIdAndUpdate(comic._id, updateObj);
 
         res.status(200).json({ message: "successfully published" });
         return next();
