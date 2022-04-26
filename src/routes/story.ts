@@ -122,10 +122,12 @@ router.get("/:id", findStory, async (req, res, next) => {
 router.post("/", isAuthenticated, isVerified, async (req, res, next) => {
     const user = req.user as IUser;
 
+    const chapterOne = { chapterName: "Untitled Chapter", text: "" };
     const newStory = new Story({
         title: "Unnamed Story",
         author: user._id,
     });
+    newStory.story.push(chapterOne);
 
     await newStory.save();
 
