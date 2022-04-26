@@ -16,11 +16,15 @@ export interface ITextProperties {
     alignItems: string;
 }
 
+export interface IChapters {
+    text: string;
+}
+
 export interface IStory extends Document {
     title: string;
     description?: string;
     tags: string[];
-    story: string;
+    story: IChapters[];
     author: Types.ObjectId;
     views: number;
     ratingTotal: number;
@@ -49,7 +53,7 @@ const storySchema = new Schema<IStory>(
             default: [],
         },
         story: {
-            type: String,
+            type: [Object],
         },
         author: {
             type: Schema.Types.ObjectId,
