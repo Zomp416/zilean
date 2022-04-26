@@ -17,6 +17,7 @@ export interface ITextProperties {
 }
 
 export interface IChapters {
+    chapterName: string;
     text: string;
 }
 
