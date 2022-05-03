@@ -34,7 +34,7 @@ export interface IStory extends Document {
         text: string;
         author: Types.ObjectId;
     }[];
-    coverart?: Types.ObjectId;
+    coverart?: string;
     updatedAt: Date;
     createdAt: Date;
     publishedAt?: Date;
@@ -89,8 +89,7 @@ const storySchema = new Schema<IStory>(
             required: true,
         },
         coverart: {
-            type: Schema.Types.ObjectId,
-            ref: "Image",
+            type: String,
         },
         publishedAt: {
             type: Date,

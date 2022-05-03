@@ -3,6 +3,7 @@ import { isAuthenticated, isVerified, findComic, isAuthor, isPublished } from ".
 import Comic, { IComic } from "../models/comic";
 import User, { IUser } from "../models/user";
 import { IImage } from "../models/image";
+import mongoose from "mongoose";
 const router = express.Router();
 
 // SEARCH COMICS
@@ -117,6 +118,24 @@ router.get("/:id", findComic, async (req, res, next) => {
     res.status(200).json({ data: req.payload });
     return next();
 });
+
+// VIEW COMIC
+router.get("/view/:id", async (req, res, next) => {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+        res.status(400).json({ error: "Unable to view comic with specified id" });
+        return next();
+    }
+    const comic = await Comic.findById(req.params.id).populate("author");
+    if (!comic || !comic.publishedAt) {
+        res.status(400).json({ error: "Unable to view comic with specified id" });
+        return next();
+    }
+    comic.views++;
+    comic.save();
+    res.status(200).json({ data: comic });
+    return next();
+});
+
 
 //FIND COMIC AUTHOR
 router.get("/comicAuthor/:id", async (req, res, next) => {

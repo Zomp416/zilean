@@ -11,7 +11,7 @@ export interface IUser extends Document {
     stories: Types.ObjectId[];
     subscriptions: Types.ObjectId[];
     subscriberCount: number;
-    profilePicture?: Types.ObjectId;
+    profilePicture?: string;
     comicRatings: {
         id: Types.ObjectId;
         rating: number;
@@ -66,8 +66,7 @@ const userSchema = new Schema<IUser>(
             default: 0,
         },
         profilePicture: {
-            type: Schema.Types.ObjectId,
-            ref: "Image",
+            type: String,
         },
         comicRatings: {
             type: [
