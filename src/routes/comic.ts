@@ -125,7 +125,7 @@ router.get("/view/:id", async (req, res, next) => {
         res.status(400).json({ error: "Unable to view comic with specified id" });
         return next();
     }
-    const comic = await Comic.findById(req.params.id).populate("author");
+    const comic = await Comic.findById(req.params.id).populate("author").populate("comments.author");
     if (!comic || !comic.publishedAt) {
         res.status(400).json({ error: "Unable to view comic with specified id" });
         return next();
