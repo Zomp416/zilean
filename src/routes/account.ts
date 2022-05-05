@@ -234,37 +234,36 @@ router.put("/", isAuthenticated, async (req, res, next) => {
     });
 });
 
-// SUBSCRIBE TO ANOTHER USER
+// SUBSCRIBE OR UNSUBSCRIBE TO ANOTHER USER
 router.post("/subscribe", isAuthenticated, async (req, res, next) => {
     const user = req.user as IUser;
-    const { subscription, ..._ } = req.body;
+    const { authorID, type } = req.body;
 
-    if (user.subscriptions.includes(subscription))
-        return res.status(400).json({ error: "already subscribed" });
+    if (!mongoose.isValidObjectId(authorID)) {
+        return res.status(400).json({ error: "Invalid Author ID" });
+    }
 
-    await User.findByIdAndUpdate(user._id, {
-        $push: { subscriptions: subscription },
-    });
-    await User.findByIdAndUpdate(subscription, { $inc: { subscriberCount: 1 } });
+    const userHasSubscription = user.subscriptions.includes(authorID);
 
-    res.status(200).json({ message: "subscribed successfully" });
-    return next();
-});
+    if (type === "add" && !userHasSubscription) {
+        await User.findByIdAndUpdate(user._id, {
+            $push: { subscriptions: authorID },
+        });
+        await User.findByIdAndUpdate(authorID, { $inc: { subscriberCount: 1 } });
 
-// UNSUBSCRIBE FROM ANOTHER USER
-router.post("/unsubscribe", isAuthenticated, async (req, res, next) => {
-    const user = req.user as IUser;
-    const { subscription, ..._ } = req.body;
+        res.status(200).json({ message: "Subscribed successfully" });
+        return next();
+    } else if (type === "remove" && userHasSubscription) {
+        await User.findByIdAndUpdate(user._id, {
+            $pull: { subscriptions: authorID },
+        });
+        await User.findByIdAndUpdate(authorID, { $inc: { subscriberCount: -1 } });
 
-    if (!user.subscriptions.includes(subscription))
-        return res.status(400).json({ error: "not subscribed" });
+        res.status(200).json({ message: "Unsubscribed successfully" });
+        return next();
+    }
 
-    await User.findByIdAndUpdate(user._id, {
-        $pull: { subscriptions: subscription },
-    });
-    await User.findByIdAndUpdate(subscription, { $inc: { subscriberCount: -1 } });
-
-    res.status(200).json({ message: "unsubscribed successfully" });
+    res.status(400).json({ message: "Unable to perform request" });
     return next();
 });
 
