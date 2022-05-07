@@ -30,6 +30,7 @@ export interface IStory extends Document {
     views: number;
     ratingTotal: number;
     ratingCount: number;
+    rating: number;
     comments: {
         text: string;
         author: Types.ObjectId;

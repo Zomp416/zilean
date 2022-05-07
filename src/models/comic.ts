@@ -53,6 +53,7 @@ export interface IComic extends Document {
     views: number;
     ratingTotal: number; // sum of all ratings
     ratingCount: number; // number of ratings
+    rating: number;
     comments: {
         text: string;
         author: Types.ObjectId;
@@ -96,6 +97,10 @@ const comicSchema = new Schema<IComic>(
             default: 0,
         },
         ratingCount: {
+            type: Number,
+            default: 0,
+        },
+        rating: {
             type: Number,
             default: 0,
         },
