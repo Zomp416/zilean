@@ -94,12 +94,16 @@ router.get("/search", async (req, res, next) => {
 
     // SORT RESULTS (ex: views, rating)
     if (req.query.sort) {
-        storyQuery.sort(req.query.sort);
+        if (req.query.sort === "alpha") storyQuery.sort({ title: 1 });
+        else if (req.query.sort === "rating") storyQuery.sort({ rating: -1 });
+        else if (req.query.sort === "views") {
+            storyQuery.sort({ views: -1 });
+        }
     }
 
     // EXECUTE QUERY (with pagination)
     if (req.query.page && req.query.limit) {
-        const stories = await Story.paginate(storyQuery, {
+        const stories = await Story.paginate(storyQuery.populate("author"), {
             page: parseInt(req.query.page as string),
             limit: parseInt(req.query.limit as string),
         });
@@ -107,7 +111,7 @@ router.get("/search", async (req, res, next) => {
     }
     // EXECUTE QUERY (normally)
     else {
-        const stories = await storyQuery.exec();
+        const stories = await storyQuery.populate("author").exec();
         res.status(200).json({ data: stories });
     }
 });
@@ -234,12 +238,16 @@ router.put(
 
         story = await Story.findByIdAndUpdate(
             story?._id,
-            { ratingTotal: total, ratingCount: count },
+            { ratingTotal: total, ratingCount: count, rating: total / count },
             { returnDocument: "after" }
         );
 
         res.status(200).json({
-            data: { ratingTotal: story?.ratingTotal, ratingCount: story?.ratingCount },
+            data: {
+                ratingTotal: story?.ratingTotal,
+                ratingCount: story?.ratingCount,
+                rating: story?.rating,
+            },
         });
         return next();
     }

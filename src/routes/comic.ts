@@ -95,12 +95,16 @@ router.get("/search", async (req, res, next) => {
 
     // SORT RESULTS (ex: views, rating)
     if (req.query.sort) {
-        comicQuery.sort(req.query.sort);
+        if (req.query.sort === "alpha") comicQuery.sort({ title: 1 });
+        else if (req.query.sort === "rating") comicQuery.sort({ rating: -1 });
+        else if (req.query.sort === "views") {
+            comicQuery.sort({ views: -1 });
+        }
     }
 
     // EXECUTE QUERY (with pagination)
     if (req.query.page && req.query.limit) {
-        const comics = await Comic.paginate(comicQuery, {
+        const comics = await Comic.paginate(comicQuery.populate("author"), {
             page: parseInt(req.query.page as string),
             limit: parseInt(req.query.limit as string),
         });
@@ -108,7 +112,7 @@ router.get("/search", async (req, res, next) => {
     }
     // EXECUTE QUERY (normally)
     else {
-        const comics = await comicQuery.exec();
+        const comics = await comicQuery.populate("author").exec();
         res.status(200).json({ data: comics });
     }
 });
@@ -125,7 +129,9 @@ router.get("/view/:id", async (req, res, next) => {
         res.status(400).json({ error: "Unable to view comic with specified id" });
         return next();
     }
-    const comic = await Comic.findById(req.params.id).populate("author").populate("comments.author");
+    const comic = await Comic.findById(req.params.id)
+        .populate("author")
+        .populate("comments.author");
     if (!comic || !comic.publishedAt) {
         res.status(400).json({ error: "Unable to view comic with specified id" });
         return next();
@@ -135,7 +141,6 @@ router.get("/view/:id", async (req, res, next) => {
     res.status(200).json({ data: comic });
     return next();
 });
-
 
 //FIND COMIC AUTHOR
 router.get("/comicAuthor/:id", async (req, res, next) => {
@@ -268,12 +273,16 @@ router.put(
 
         comic = await Comic.findByIdAndUpdate(
             comic?._id,
-            { ratingTotal: total, ratingCount: count },
+            { ratingTotal: total, ratingCount: count, rating: total / count },
             { returnDocument: "after" }
         );
 
         res.status(200).json({
-            data: { ratingTotal: comic?.ratingTotal, ratingCount: comic?.ratingCount },
+            data: {
+                ratingTotal: comic?.ratingTotal,
+                ratingCount: comic?.ratingCount,
+                rating: comic?.rating,
+            },
         });
         return next();
     }
