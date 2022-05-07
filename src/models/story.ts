@@ -34,6 +34,7 @@ export interface IStory extends Document {
     comments: {
         text: string;
         author: Types.ObjectId;
+        createdAt: Date;
     }[];
     coverart?: string;
     updatedAt: Date;
@@ -85,6 +86,9 @@ const storySchema = new Schema<IStory>(
                         type: Schema.Types.ObjectId,
                         ref: "User",
                     },
+                    createdAt: {
+                        type: Date,
+                    }
                 },
             ],
             required: true,
