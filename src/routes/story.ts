@@ -2,6 +2,7 @@ import express from "express";
 import { isAuthenticated, isVerified, findStory, isAuthor, isPublished } from "../util/middlewares";
 import Story, { IStory } from "../models/story";
 import User, { IUser } from "../models/user";
+import mongoose from "mongoose";
 
 const router = express.Router();
 
@@ -119,6 +120,25 @@ router.get("/search", async (req, res, next) => {
 // GET STORY
 router.get("/:id", findStory, async (req, res, next) => {
     res.status(200).json({ data: req.payload });
+    return next();
+});
+
+// VIEW STORY
+router.get("/view/:id", async (req, res, next) => {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+        res.status(400).json({ error: "Unable to view comic with specified id" });
+        return next();
+    }
+    const story = await Story.findById(req.params.id)
+        .populate("author")
+        .populate("comments.author");
+    if (!story || !story.publishedAt) {
+        res.status(400).json({ error: "Unable to view comic with specified id" });
+        return next();
+    }
+    story.views++;
+    story.save();
+    res.status(200).json({ data: story });
     return next();
 });
 
@@ -271,9 +291,9 @@ router.post(
 
         story = await Story.findByIdAndUpdate(
             story?._id,
-            { $push: { comments: { text: req.body.text, author: user._id } } },
+            { $push: { comments: { text: req.body.text, author: user._id, createdAt: new Date() } } },
             { returnDocument: "after" }
-        );
+        ).populate("comments.author");
 
         res.status(200).json({
             data: { comments: story?.comments },
@@ -281,5 +301,40 @@ router.post(
         return next();
     }
 );
+
+// DELETE COMMENT
+router.delete(
+    "/comment/:id",
+    isAuthenticated,
+    isVerified,
+    findStory,
+    isPublished,
+    async (req, res, next) => {
+        let story: IStory | null = req.payload as IStory;
+        const user = req.user as IUser;
+
+        if (!req.body.createdAt) {
+            res.status(400).json({ error: "message body is missing information" });
+            return next();
+        }
+
+        const filterDate = new Date(req.body.createdAt);
+
+        await story.populate("comments.author");
+
+        story.comments = story.comments.filter(val => {
+            if (!val.createdAt) return true;
+            return val.createdAt.getTime() !== filterDate.getTime();
+        });
+
+        await story.save();
+
+        res.status(200).json({
+            data: { comments: story?.comments },
+        });
+        return next();
+    }
+);
+
 
 export default router;
