@@ -57,6 +57,7 @@ export interface IComic extends Document {
     comments: {
         text: string;
         author: Types.ObjectId;
+        createdAt: Date;
     }[];
     createdAt: Date;
     updatedAt: Date;
@@ -115,6 +116,9 @@ const comicSchema = new Schema<IComic>(
                         type: Schema.Types.ObjectId,
                         ref: "User",
                     },
+                    createdAt: {
+                        type: Date,
+                    }
                 },
             ],
             required: true,

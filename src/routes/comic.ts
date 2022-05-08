@@ -306,9 +306,43 @@ router.post(
 
         comic = await Comic.findByIdAndUpdate(
             comic?._id,
-            { $push: { comments: { text: req.body.text, author: user._id } } },
+            { $push: { comments: { text: req.body.text, author: user._id, createdAt: new Date() } } },
             { returnDocument: "after" }
-        );
+        ).populate("comments.author");
+
+        res.status(200).json({
+            data: { comments: comic?.comments },
+        });
+        return next();
+    }
+);
+
+// DELETE COMMENT
+router.delete(
+    "/comment/:id",
+    isAuthenticated,
+    isVerified,
+    findComic,
+    isPublished,
+    async (req, res, next) => {
+        let comic: IComic | null = req.payload as IComic;
+        const user = req.user as IUser;
+
+        if (!req.body.createdAt) {
+            res.status(400).json({ error: "message body is missing information" });
+            return next();
+        }
+
+        const filterDate = new Date(req.body.createdAt);
+
+        await comic.populate("comments.author");
+
+        comic.comments = comic.comments.filter(val => {
+            if (!val.createdAt) return true;
+            return val.createdAt.getTime() !== filterDate.getTime();
+        });
+
+        await comic.save();
 
         res.status(200).json({
             data: { comments: comic?.comments },
