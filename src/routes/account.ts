@@ -81,8 +81,10 @@ router.get("/search", async (req, res, next) => {
         const limit = parseInt(req.query.limit as string);
         const page = parseInt(req.query.page as string);
         const users = await User.find(userQuery, {}, { skip: page * limit, limit }).exec();
-        res.status(200).json({ data: users });
+        const count = await User.countDocuments(userQuery);
+        res.status(200).json({ data: { results: users, count } });
     }
+
     // EXECUTE QUERY (normally)
     else {
         const users = await userQuery.exec();

@@ -109,7 +109,8 @@ router.get("/search", async (req, res, next) => {
         const comics = await Comic.find(comicQuery, {}, { skip: page * limit, limit })
             .populate("author")
             .exec();
-        res.status(200).json({ data: comics });
+        const count = await Comic.countDocuments(comicQuery);
+        res.status(200).json({ data: { results: comics, count } });
     }
     // EXECUTE QUERY (normally)
     else {
