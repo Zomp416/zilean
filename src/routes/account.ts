@@ -69,11 +69,13 @@ router.get("/search", async (req, res, next) => {
         userQuery.and(queryFilters);
     }
 
-    // SORT RESULTS (ex: subscriberCount)
+    // SORT RESULTS
     if (req.query.sort) {
-        userQuery.sort(req.query.sort);
+        if (req.query.sort === "alpha") userQuery.sort({ username: 1 });
+        else if (req.query.sort === "subscribers") {
+            userQuery.sort({ subscriberCount: -1 });
+        }
     }
-
     // EXECUTE QUERY (with pagination)
     if (req.query.page && req.query.limit) {
         const limit = parseInt(req.query.limit as string);
