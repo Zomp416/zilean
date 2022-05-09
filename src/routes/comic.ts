@@ -248,8 +248,8 @@ router.put(
         const user = req.user as IUser;
 
         const rating = parseFloat(req.body.rating);
-        if (!rating || rating > 5 || rating < 0) {
-            res.status(400).json({ error: "invalid rating" });
+        if (!comic || !rating || rating > 5 || rating < 0) {
+            res.status(400).json({ error: "invalid rating or comic" });
             return next();
         }
 
@@ -271,17 +271,16 @@ router.put(
             $push: { comicRatings: { rating: rating, id: req.params.id } },
         });
 
-        comic = await Comic.findByIdAndUpdate(
-            comic?._id,
-            { ratingTotal: total, ratingCount: count, rating: total / count },
-            { returnDocument: "after" }
-        );
+        comic.ratingTotal = total;
+        comic.ratingCount = count;
+        comic.rating = total / count;
+        await comic.save();
 
         res.status(200).json({
             data: {
-                ratingTotal: comic?.ratingTotal,
-                ratingCount: comic?.ratingCount,
-                rating: comic?.rating,
+                ratingTotal: comic.ratingTotal,
+                ratingCount: comic.ratingCount,
+                rating: comic.rating,
             },
         });
         return next();

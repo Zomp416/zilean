@@ -75,6 +75,10 @@ const storySchema = new Schema<IStory>(
             type: Number,
             default: 0,
         },
+        rating: {
+            type: Number,
+            default: 0,
+        },
         comments: {
             type: [
                 {
