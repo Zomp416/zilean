@@ -97,9 +97,8 @@ router.get("/search", async (req, res, next) => {
     if (req.query.sort) {
         if (req.query.sort === "alpha") comicQuery.sort({ title: 1 });
         else if (req.query.sort === "rating") comicQuery.sort({ rating: -1 });
-        else if (req.query.sort === "views") {
-            comicQuery.sort({ views: -1 });
-        }
+        else if (req.query.sort === "views") comicQuery.sort({ views: -1 });
+        else if (req.query.sort === "time") comicQuery.sort({ publishedAt: -1 });
     }
 
     // EXECUTE QUERY (with pagination)

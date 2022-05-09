@@ -97,9 +97,8 @@ router.get("/search", async (req, res, next) => {
     if (req.query.sort) {
         if (req.query.sort === "alpha") storyQuery.sort({ title: 1 });
         else if (req.query.sort === "rating") storyQuery.sort({ rating: -1 });
-        else if (req.query.sort === "views") {
-            storyQuery.sort({ views: -1 });
-        }
+        else if (req.query.sort === "views") storyQuery.sort({ views: -1 });
+        else if (req.query.sort === "time") storyQuery.sort({ publishedAt: -1 });
     }
 
     // EXECUTE QUERY (with pagination)
