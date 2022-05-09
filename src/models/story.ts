@@ -1,5 +1,4 @@
-import { PaginateModel, Document, Types, Schema, model } from "mongoose";
-import mongoosePaginate from "mongoose-paginate";
+import { Model, Document, Types, Schema, model } from "mongoose";
 
 export interface IImageProperties {
     image: Types.ObjectId;
@@ -92,7 +91,7 @@ const storySchema = new Schema<IStory>(
                     },
                     createdAt: {
                         type: Date,
-                    }
+                    },
                 },
             ],
             required: true,
@@ -107,6 +106,5 @@ const storySchema = new Schema<IStory>(
     { timestamps: true }
 );
 
-storySchema.plugin(mongoosePaginate);
-const Story: PaginateModel<IStory> = model<IStory>("Story", storySchema) as PaginateModel<IStory>;
+const Story: Model<IStory> = model<IStory>("Story", storySchema);
 export default Story;
