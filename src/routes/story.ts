@@ -97,18 +97,19 @@ router.get("/search", async (req, res, next) => {
     if (req.query.sort) {
         if (req.query.sort === "alpha") storyQuery.sort({ title: 1 });
         else if (req.query.sort === "rating") storyQuery.sort({ rating: -1 });
-        else if (req.query.sort === "views") {
-            storyQuery.sort({ views: -1 });
-        }
+        else if (req.query.sort === "views") storyQuery.sort({ views: -1 });
+        else if (req.query.sort === "time") storyQuery.sort({ publishedAt: -1 });
     }
 
     // EXECUTE QUERY (with pagination)
     if (req.query.page && req.query.limit) {
-        const stories = await Story.paginate(storyQuery.populate("author"), {
-            page: parseInt(req.query.page as string),
-            limit: parseInt(req.query.limit as string),
-        });
-        res.status(200).json({ data: stories.docs });
+        const limit = parseInt(req.query.limit as string);
+        const page = parseInt(req.query.page as string);
+        const stories = await Story.find(storyQuery, {}, { skip: page * limit, limit })
+            .populate("author")
+            .exec();
+        const count = await Story.countDocuments(storyQuery);
+        res.status(200).json({ data: { results: stories, count } });
     }
     // EXECUTE QUERY (normally)
     else {
@@ -290,7 +291,11 @@ router.post(
 
         story = await Story.findByIdAndUpdate(
             story?._id,
-            { $push: { comments: { text: req.body.text, author: user._id, createdAt: new Date() } } },
+            {
+                $push: {
+                    comments: { text: req.body.text, author: user._id, createdAt: new Date() },
+                },
+            },
             { returnDocument: "after" }
         ).populate("comments.author");
 
@@ -334,6 +339,5 @@ router.delete(
         return next();
     }
 );
-
 
 export default router;

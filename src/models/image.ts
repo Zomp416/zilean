@@ -1,5 +1,4 @@
-import { PaginateModel, Document, Types, Schema, model } from "mongoose";
-import mongoosePaginate from "mongoose-paginate";
+import { Model, Document, Types, Schema, model } from "mongoose";
 
 export interface IImage extends Document {
     name: string;
@@ -38,6 +37,5 @@ const imageSchema = new Schema<IImage>(
     { timestamps: true }
 );
 
-imageSchema.plugin(mongoosePaginate);
-const Image: PaginateModel<IImage> = model<IImage>("Image", imageSchema) as PaginateModel<IImage>;
+const Image: Model<IImage> = model<IImage>("Image", imageSchema);
 export default Image;

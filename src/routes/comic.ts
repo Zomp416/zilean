@@ -97,18 +97,19 @@ router.get("/search", async (req, res, next) => {
     if (req.query.sort) {
         if (req.query.sort === "alpha") comicQuery.sort({ title: 1 });
         else if (req.query.sort === "rating") comicQuery.sort({ rating: -1 });
-        else if (req.query.sort === "views") {
-            comicQuery.sort({ views: -1 });
-        }
+        else if (req.query.sort === "views") comicQuery.sort({ views: -1 });
+        else if (req.query.sort === "time") comicQuery.sort({ publishedAt: -1 });
     }
 
     // EXECUTE QUERY (with pagination)
     if (req.query.page && req.query.limit) {
-        const comics = await Comic.paginate(comicQuery.populate("author"), {
-            page: parseInt(req.query.page as string),
-            limit: parseInt(req.query.limit as string),
-        });
-        res.status(200).json({ data: comics.docs });
+        const limit = parseInt(req.query.limit as string);
+        const page = parseInt(req.query.page as string);
+        const comics = await Comic.find(comicQuery, {}, { skip: page * limit, limit })
+            .populate("author")
+            .exec();
+        const count = await Comic.countDocuments(comicQuery);
+        res.status(200).json({ data: { results: comics, count } });
     }
     // EXECUTE QUERY (normally)
     else {
@@ -305,7 +306,11 @@ router.post(
 
         comic = await Comic.findByIdAndUpdate(
             comic?._id,
-            { $push: { comments: { text: req.body.text, author: user._id, createdAt: new Date() } } },
+            {
+                $push: {
+                    comments: { text: req.body.text, author: user._id, createdAt: new Date() },
+                },
+            },
             { returnDocument: "after" }
         ).populate("comments.author");
 

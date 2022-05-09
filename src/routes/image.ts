@@ -113,11 +113,10 @@ router.get("/search", async (req, res, next) => {
 
     // EXECUTE QUERY (with pagination)
     if (req.query.page && req.query.limit) {
-        const images = await Image.paginate(imageQuery, {
-            page: parseInt(req.query.page as string),
-            limit: parseInt(req.query.limit as string),
-        });
-        res.status(200).json({ data: images.docs });
+        const limit = parseInt(req.query.limit as string);
+        const page = parseInt(req.query.page as string);
+        const images = await Image.find(imageQuery, {}, { skip: page * limit, limit }).exec();
+        res.status(200).json({ data: images });
     }
     // EXECUTE QUERY (normally)
     else {

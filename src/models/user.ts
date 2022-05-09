@@ -1,5 +1,4 @@
-import { PaginateModel, Document, Types, Schema, model } from "mongoose";
-import mongoosePaginate from "mongoose-paginate";
+import { Model, Document, Types, Schema, model } from "mongoose";
 
 export interface IUser extends Document {
     email: string;
@@ -41,7 +40,7 @@ const userSchema = new Schema<IUser>(
             required: true,
         },
         about: {
-            type: String, 
+            type: String,
             default: "",
         },
         verified: {
@@ -100,6 +99,5 @@ const userSchema = new Schema<IUser>(
     { timestamps: true }
 );
 
-userSchema.plugin(mongoosePaginate);
-const User: PaginateModel<IUser> = model<IUser>("User", userSchema) as PaginateModel<IUser>;
+const User: Model<IUser> = model<IUser>("User", userSchema);
 export default User;

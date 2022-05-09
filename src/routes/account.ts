@@ -69,19 +69,22 @@ router.get("/search", async (req, res, next) => {
         userQuery.and(queryFilters);
     }
 
-    // SORT RESULTS (ex: subscriberCount)
+    // SORT RESULTS
     if (req.query.sort) {
-        userQuery.sort(req.query.sort);
+        if (req.query.sort === "alpha") userQuery.sort({ username: 1 });
+        else if (req.query.sort === "subscribers") {
+            userQuery.sort({ subscriberCount: -1 });
+        }
     }
-
     // EXECUTE QUERY (with pagination)
     if (req.query.page && req.query.limit) {
-        const users = await User.paginate(userQuery, {
-            page: parseInt(req.query.page as string),
-            limit: parseInt(req.query.limit as string),
-        });
-        res.status(200).json({ data: users.docs });
+        const limit = parseInt(req.query.limit as string);
+        const page = parseInt(req.query.page as string);
+        const users = await User.find(userQuery, {}, { skip: page * limit, limit }).exec();
+        const count = await User.countDocuments(userQuery);
+        res.status(200).json({ data: { results: users, count } });
     }
+
     // EXECUTE QUERY (normally)
     else {
         const users = await userQuery.exec();
@@ -100,10 +103,9 @@ router.get("/:id", async (req, res, next) => {
     return next();
 });
 
-
 //GET USER BY USERNAME
 router.get("/findUser/:id", async (req, res, next) => {
-    const user = await User.findOne({username: req.params.id});
+    const user = await User.findOne({ username: req.params.id });
     if (!user) {
         res.status(400).json({ error: "No user found" });
         return next();
@@ -331,7 +333,6 @@ router.post("/reset-password", async (req, res, next) => {
         return next();
     }
 
-
     const user = await User.findOne({ _id: id });
     if (!user) {
         res.status(400).json({ error: "User not found" });
@@ -362,7 +363,7 @@ router.post("/send-verify", async (req, res, next) => {
 
     const user = await User.findOne({ email: email });
     if (!user) {
-        res.status(200).json({  message: "Lowkey tho there's no user with this email" });
+        res.status(200).json({ message: "Lowkey tho there's no user with this email" });
         return next();
     }
 
