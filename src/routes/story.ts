@@ -109,7 +109,6 @@ router.get("/search", async (req, res, next) => {
         const stories = await Story.find(storyQuery, {}, { skip: page * limit, limit })
             .populate("author")
             .exec();
-        res.status(200).json({ data: stories });
         const count = await Story.countDocuments(storyQuery);
         res.status(200).json({ data: { results: stories, count } });
     }
