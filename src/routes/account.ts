@@ -195,9 +195,6 @@ router.post("/register", async (req, res, next) => {
 router.put("/", isAuthenticated, async (req, res, next) => {
     const oldUser = req.user as IUser;
     const newUser = req.body.user as IUser;
-    const oldPassword = req.body.user.oldpassword;
-    const newPassword = req.body.user.newpassword;
-    const confirmPassword = req.body.user.confirmpassword;
 
     if (!newUser) {
         res.status(400).json({ error: "Missing arguments" });
@@ -209,11 +206,27 @@ router.put("/", isAuthenticated, async (req, res, next) => {
         return next();
     }
 
-    if (oldPassword === "" && newPassword === "" && confirmPassword === "") {
-        const user = await User.findByIdAndUpdate(oldUser._id, newUser, {
-            returnDocument: "after",
-        });
-        res.status(200).json({ data: user });
+    const user = await User.findByIdAndUpdate(oldUser._id, newUser, {
+        returnDocument: "after",
+    });
+    res.status(200).json({ data: user });
+    return next();
+});
+
+// CHANGE PASSWORD 
+router.put("/change-password", isAuthenticated, async (req, res, next) => {
+    const oldUser = req.user as IUser;
+    const newUser = req.body.user as IUser;
+    const oldPassword = req.body.user.oldpassword;
+    const newPassword = req.body.user.newpassword;
+
+    if (!newUser) {
+        res.status(400).json({ error: "Missing arguments" });
+        return next();
+    }
+
+    if (newUser._id && newUser._id.toString() !== oldUser._id.toString()) {
+        res.status(401).json({ error: "User ID's do not match." });
         return next();
     }
 
