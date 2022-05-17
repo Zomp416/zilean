@@ -157,7 +157,7 @@ router.post("/", isAuthenticated, isVerified, upload, async (req, res, next) => 
         mimeType = fType.mime;
     }
 
-    const { directory, name } = req.body;
+    const { directory, name, tags } = req.body;
     if (!directory || !DIRECTORY_NAMES.includes(directory) || !name) {
         res.status(400).json({ error: "Invalid request arguments." });
         return next();
@@ -169,6 +169,7 @@ router.post("/", isAuthenticated, isVerified, upload, async (req, res, next) => 
 
     const newImage = new Image({
         name,
+        tags,
         searchable,
         imageURL: filePath,
         author: user._id,
